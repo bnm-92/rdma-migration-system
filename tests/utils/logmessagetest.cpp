@@ -1,4 +1,4 @@
-#include "miscutils.hpp"
+#include "../../include/utils/miscutils.hpp"
 
 int main() {
     LogMessage(4, "MESSAGE", "this is a message");

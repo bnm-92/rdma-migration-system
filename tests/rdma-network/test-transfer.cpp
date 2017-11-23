@@ -13,7 +13,7 @@ Give it a message, and it when clients connect, clients will RDMA-read the messa
 
 #include "rdma_server.hpp"
 #include "rdma_client.hpp"
-#include "../rdma-project-utils/miscutils.hpp"
+#include "miscutils.hpp"
 #include <sys/mman.h>
 
 #include <errno.h>
