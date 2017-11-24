@@ -1,7 +1,7 @@
 .PHONY: clean
 
 CXX := g++
-CXXFLAGS := -Wall -g -std=c++11 -MMD -I../../include/utils -I../../include/rdma-network
+CXXFLAGS := -Wall -g -std=c++11 -MMD -I../../include/utils -I../../include/rdma-network -I../../src/rdma-network
 LDFLAGS := ${LDFLAGS} -lrdmacm -libverbs -lpthread
 
 APPS := test-server test-client test-transfer
