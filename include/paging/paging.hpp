@@ -12,24 +12,29 @@
 
 using namespace std;
 
-RDMAMemoryManager* manager; // this will be initialized by the started program
 struct sigaction act;
+static RDMAMemoryManager* manager = nullptr;
 
 void sigsegv_advance(int signum, siginfo_t *info_, void* ptr) { 
+    if(manager == nullptr) {
+        LogError("Manager is null");
+        perror("Manager not declared for static access in sigsegv fault handler");
+        exit(errno);
+    }
+
     // memory location of the fault
     void* addr = info_->si_addr;
     RDMAMemory* memory = manager->getRDMAMemory(addr);
-    
-    fprintf(stderr, "got sigsegv at %p\n", p1);
+    size_t page_size = memory->page_size; 
     
     //do something with this
-
-    void * addr = (void*) ((uintptr_t)p & ~(PAGESIZE - 1));
-    if(mprotect(addr, 1024, PROT_READ | PROT_WRITE)) {
+    addr = (void*) ((uintptr_t)addr & ~(page_size - 1));
+    if(mprotect(addr, page_size, PROT_READ | PROT_WRITE)) {
         perror("couldnt mprotect3");
         exit(errno);
     }
 
+    manager->Pull(addr, page_size, memory->pair);
 
 }
 

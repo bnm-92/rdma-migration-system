@@ -17,6 +17,7 @@
 class RDMAMemory{
 public:
     RDMAMemory(int owner, void* addr, size_t size);
+    RDMAMemory(int owner, void* addr, size_t size, size_t page_size);
     ~RDMAMemory();
     
     enum class State {
@@ -32,6 +33,7 @@ public:
     int owner;
     State state;
     int pair;
+    size_t page_size;
 };
 
 /*

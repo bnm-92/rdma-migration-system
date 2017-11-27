@@ -7,8 +7,8 @@ template <class T>
 inline
 RDMAContainerBase<T>::RDMAContainerBase(RDMAMemoryManager* manager) : 
     manager(manager),
-    mempool(nullptr),
-    rdma_memory(nullptr){}
+    rdma_memory(nullptr),
+    mempool(nullptr){}
 
 template <class T>
 inline

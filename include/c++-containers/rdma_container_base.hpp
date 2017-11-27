@@ -34,7 +34,7 @@ public:
     */
     bool PollForTransfer();
     
-    RDMAMemory* PollForClose();
+    bool PollForClose();
     void Close();
 
     /*
@@ -44,15 +44,16 @@ public:
 
 protected:
     /*
-        Memory Pool object is used by the container to allocate memory for all objects
-    */
-    MemoryPool* mempool;
-    
-    /*
         Manager for cluster memory
     */
     RDMAMemoryManager *manager;
     RDMAMemory* rdma_memory;
+
+    /*
+        Memory Pool object is used by the container to allocate memory for all objects
+    */
+    MemoryPool* mempool;
+    
     /*
         Typedef for our custom scoped allocator class.
     */

@@ -8,6 +8,16 @@ RDMAMemory::RDMAMemory(int owner, void* addr, size_t size) :
     this->owner = owner;
     this->vaddr = addr;
     this->size = size;
+    this->page_size = 4096;
+}
+
+inline
+RDMAMemory::RDMAMemory(int owner, void* addr, size_t size, size_t page_size) : 
+    pair(-1) {    
+    this->owner = owner;
+    this->vaddr = addr;
+    this->size = size;
+    this->page_size = page_size;
 }
 
 inline
@@ -221,6 +231,7 @@ void* RDMAMemoryManager::accept(void* v_addr, size_t size, int source){
     this->coordinator.getServer(source, conn_id)->register_memory(this->coordinator.connections[source],v_addr, size, false);
     LogInfo("sending accept");
     this->coordinator.getServer(source, conn_id)->send_accept(conn_id, mem, size);
+   
     return mem;
 }
 
@@ -256,8 +267,15 @@ int RDMAMemoryManager::transfer(void* v_addr, size_t size, int destination){
 inline
 void RDMAMemoryManager::on_transfer(void* v_addr, size_t size, int source) {
     // updateState(v_addr, RDMAMemory::State::Shared);
-    this->Pull(v_addr, size, source);
-    UpdateState(v_addr, RDMAMemory::State::Clean);
+    #if PAGING
+        if(mprotect(v_addr, size, PROT_NONE)  != 0) {
+            LogError("Mprotect failed");
+            exit(errno);
+        }
+    #elif
+        this->Pull(v_addr, size, source);
+        UpdateState(v_addr, RDMAMemory::State::Clean);
+    #endif
 }
 
 inline
@@ -477,5 +495,14 @@ RDMAMemory* RDMAMemoryManager::PollForClose() {
 }
 
 RDMAMemory* RDMAMemoryManager::getRDMAMemory(void* address) {
-    
+    //TODO change to binary search, but for that we'll have to change the underlying data structure
+    std::unordered_map<void*,RDMAMemory*>::iterator it;
+    for (it = memory_map.begin(); it != memory_map.end(); it++ ) {
+        void* addr1 = it->first;
+        RDMAMemory* memory = it->second;
+        void* addr2 = (void*) ((char*)memory->vaddr + memory->size);
+        if(address >= addr1 && address < addr2)
+            return memory;
+    }
+    return nullptr;
 }
