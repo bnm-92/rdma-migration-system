@@ -47,6 +47,8 @@ public:
     ~RDMAMemoryManager();
     
 public:
+    RDMAMemory* getRDMAMemory(void* address);
+
     void* allocate(void* v_addr, size_t size);
     void* allocate(size_t size);
     void deallocate(void* v_addr);

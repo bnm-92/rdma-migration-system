@@ -475,3 +475,7 @@ RDMAMemory* RDMAMemoryManager::PollForClose() {
         return nullptr;
     return incoming_dones.dequeue();
 }
+
+RDMAMemory* RDMAMemoryManager::getRDMAMemory(void* address) {
+    
+}

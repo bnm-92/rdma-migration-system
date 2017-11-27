@@ -78,7 +78,7 @@ bool RDMAContainerBase<T>::Transfer() {
 template <class T>
 inline
 bool RDMAContainerBase<T>::PollForTransfer() {
-    RDMAMemory* mem = manager->PollForTransfer();;
+    RDMAMemory* mem = manager->PollForTransfer();
     if(mem == nullptr)
         return false;
     this->rdma_memory = mem;
@@ -87,8 +87,12 @@ bool RDMAContainerBase<T>::PollForTransfer() {
 
 template <class T>
 inline
-RDMAMemory* RDMAContainerBase<T>::PollForClose() {
-    return manager->PollForClose();
+bool RDMAContainerBase<T>::PollForClose() {
+    RDMAMemory* mem = manager->PollForClose();
+    if(mem == nullptr)
+        return false;
+    this->rdma_memory = mem;
+    return true; 
 }
 
 template <class T>
