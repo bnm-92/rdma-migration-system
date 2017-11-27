@@ -5,15 +5,16 @@
 
 template <class T>
 inline
-RDMAContainerBase<T>::RDMAContainerBase(RDMAMemoryManager* manager)
-    : manager(manager), 
-      rdma_memory(nullptr)
-    {}
+RDMAContainerBase<T>::RDMAContainerBase(RDMAMemoryManager* manager) : 
+    manager(manager),
+    mempool(nullptr),
+    rdma_memory(nullptr){}
 
 template <class T>
 inline
 RDMAContainerBase<T>::~RDMAContainerBase() {
-    manager->deallocate(mempool->addr);
+    if (mempool != nullptr)
+        manager->deallocate(mempool->addr);
 }
 
 template <class T>
