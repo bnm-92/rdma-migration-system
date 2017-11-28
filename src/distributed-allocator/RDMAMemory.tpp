@@ -563,7 +563,7 @@ void RDMAMemoryManager::PullAllPages(RDMAMemory* memory){
         this->Pull(addr, pagesize, source);
         memory->pages.setPageState(addr, Page::PageState::Local);
     }
-    
-    manager->UpdateState(memory, RDMAMemory::State::Clean);
+
+    this->UpdateState(memory, RDMAMemory::State::Clean);
     this->close(memory->vaddr, memory->size, source);
 }
