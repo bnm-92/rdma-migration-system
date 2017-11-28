@@ -188,6 +188,7 @@ void RDMAMemoryManager::deallocate(void* v_addr, size_t size){
     this->deallocate(v_addr);    
 }
 
+inline
 int RDMAMemoryManager::Prepare(void* v_addr, size_t size, int destination) {
     LogAssert(memory_map.find(v_addr) != memory_map.end(), "memory not part of memory map");
     uintptr_t conn_id = this->coordinator.connections[destination];
@@ -446,6 +447,7 @@ void RDMAMemoryManager::on_close(void* addr, size_t size, int pair) {
     this->incoming_dones.enqueue(it->second);
 }
 
+inline
 void RDMAMemoryManager::poller_thread_method() {
     while(run) {
         int source = this->HasMessage();
@@ -476,24 +478,28 @@ void RDMAMemoryManager::poller_thread_method() {
     }
 }
 
+inline
 RDMAMemory* RDMAMemoryManager::PollForAccept() {
     if(incoming_accepts.empty())
         return nullptr;
     return incoming_accepts.dequeue(); 
 }
 
+inline
 RDMAMemory* RDMAMemoryManager::PollForTransfer() {
     if(incoming_transfers.empty())
         return nullptr;
     return incoming_transfers.dequeue();
 }
 
+inline
 RDMAMemory* RDMAMemoryManager::PollForClose() {
     if(incoming_dones.empty())
         return nullptr;
     return incoming_dones.dequeue();
 }
 
+inline
 RDMAMemory* RDMAMemoryManager::getRDMAMemory(void* address) {
     //TODO change to binary search, but for that we'll have to change the underlying data structure
     std::unordered_map<void*,RDMAMemory*>::iterator it;
