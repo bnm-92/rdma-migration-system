@@ -21,7 +21,7 @@ class Page{
                 Remote,
                 InFlight,
                 Local
-            } pagestate;
+            } pagestate = PageState::Remote;
 };
 
 class Pages{
@@ -35,19 +35,20 @@ class Pages{
         size_t getPageSize(int page_id);
         size_t getPageSize(void* address);
 
-        void setPage(int page_id, Page::PageState state);
-        void setPage(void* address, Page::PageState state);
+        void setPageState(int page_id, Page::PageState state);
+        void setPageState(void* address, Page::PageState state);
 
         Page::PageState getPageState(int page_id);
         Page::PageState getPageState(void* address);
 
+        vector<Page> pages;
     private:
         uintptr_t start_address;
         uintptr_t end_address;
         size_t memory_size;
         size_t page_size;
         int num_pages;
-        vector<Page> pages;
+        int local_pages;
 };
 
 #include <paging.tpp>

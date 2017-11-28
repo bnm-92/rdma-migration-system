@@ -3,7 +3,8 @@
 #include <string.h>
 
 inline
-RDMAMemory::RDMAMemory(int owner, void* addr, size_t size) : 
+RDMAMemory::RDMAMemory(int owner, void* addr, size_t size) :
+    state(State::Clean),
     pair(-1),
     pages((uintptr_t)addr, size, 4096) {    
     this->owner = owner;
@@ -12,7 +13,8 @@ RDMAMemory::RDMAMemory(int owner, void* addr, size_t size) :
 }
 
 inline
-RDMAMemory::RDMAMemory(int owner, void* addr, size_t size, size_t page_size) : 
+RDMAMemory::RDMAMemory(int owner, void* addr, size_t size, size_t page_size) :
+    state(State::Clean),
     pair(-1),
     pages((uintptr_t)addr, size, page_size) {    
     this->owner = owner;
@@ -191,6 +193,7 @@ void RDMAMemoryManager::deallocate(void* v_addr, size_t size){
 inline
 int RDMAMemoryManager::Prepare(void* v_addr, size_t size, int destination) {
     LogAssert(memory_map.find(v_addr) != memory_map.end(), "memory not part of memory map");
+    LogAssert(memory_map.find(v_addr)->second->state == RDMAMemory::State::Clean, "memory not clean, please ensure all memory is local before moving it along");
     uintptr_t conn_id = this->coordinator.connections[destination];
     this->UpdatePair(v_addr, destination);
     this->register_memory(v_addr, size, destination);
@@ -273,6 +276,7 @@ void RDMAMemoryManager::on_transfer(void* v_addr, size_t size, int source) {
             LogError("Mprotect failed");
             exit(errno);
         }
+        UpdateState(v_addr, RDMAMemory::State::Shared);
     #else
         this->Pull(v_addr, size, source);
         UpdateState(v_addr, RDMAMemory::State::Clean);
@@ -521,4 +525,34 @@ RDMAMemory* RDMAMemoryManager::getRDMAMemory(void* address) {
             return memory;
     }
     return nullptr;
+}
+
+inline
+void RDMAMemoryManager::PullAllPages(void* address){
+    auto x = memory_map.find(address);
+    RDMAMemory* memory = x->second;
+    unsigned int id = 0;
+    int source = memory->pair;
+
+    LogAssert(x != memory_map.end(), "cannot find memory");
+    LogAssert(source != -1, "source not set");
+
+    vector<Page> p = memory->pages.pages;
+    for (; id<p.size(); id++) {
+        if(p.at(id).pagestate == Page::PageState::Local)
+            continue;
+
+        void* addr = memory->pages.getPageAddress(id);
+        size_t pagesize = memory->pages.getPageSize(id);
+
+        memory->pages.setPageState(addr, Page::PageState::InFlight);
+
+        if(mprotect(addr, pagesize, PROT_READ | PROT_WRITE)) {
+            perror("couldnt mprotect3");
+            exit(errno);
+        }
+    
+        this->Pull(addr, pagesize, source);
+        memory->pages.setPageState(addr, Page::PageState::Local);
+    }
 }

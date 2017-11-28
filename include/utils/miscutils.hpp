@@ -14,7 +14,7 @@
 #include <assert.h> 
 #include <cstddef>
 
-#define PAGING 0
+#define PAGING 1
 #define ASCII_STARS "**********************************************************************"
 #define DEBUG 0
 #define LEVEL 0

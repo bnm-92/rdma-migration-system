@@ -1,7 +1,7 @@
 // paging.tpp
 
 inline
-Pages::Pages(uintptr_t start_address, size_t memory_size, size_t page_size) {
+Pages::Pages(uintptr_t start_address, size_t memory_size, size_t page_size) : local_pages(0) {
     this->start_address = start_address;
     this->memory_size = memory_size;
     this->end_address = (uintptr_t)((char*) start_address + memory_size);
@@ -42,14 +42,17 @@ size_t Pages::getPageSize(void* address) {
 }
 
 inline
-void Pages::setPage(int page_id, Page::PageState state){
+void Pages::setPageState(int page_id, Page::PageState state){
     pages.at(page_id).pagestate = state;
+    if(state == Page::PageState::Local)
+        local_pages++;
 }
 
 inline
-void Pages::setPage(void* address, Page::PageState state){
+void Pages::setPageState(void* address, Page::PageState state){
     int page_id = ((uintptr_t)address - start_address)/page_size;
     pages.at(page_id).pagestate = state;
+    local_pages++;
 }
 
 inline

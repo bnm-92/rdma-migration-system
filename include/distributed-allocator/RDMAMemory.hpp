@@ -73,6 +73,8 @@ public:
     void close(void* v_addr, size_t size, int source);
     RDMAMemory* PollForClose();
     RDMAMemory* PeekClose();
+
+    void PullAllPages(void* address);
 //TODO Make private or REMOVE
 private:
     int pull(void* v_addr, int source);
@@ -180,14 +182,22 @@ static void sigsegv_advance(int signum, siginfo_t *info_, void* ptr) {
     addr = memory->pages.getPageAddress(addr);
     size_t page_size = memory->pages.getPageSize(addr); 
 
+    if(memory->pages.getPageState(addr) == Page::PageState::Remote)
+        memory->pages.setPageState(addr, Page::PageState::InFlight);
+    else
+        return;
+
     if(mprotect(addr, page_size, PROT_READ | PROT_WRITE)) {
         perror("couldnt mprotect3");
         exit(errno);
     }
     // TestTimer t = TestTimer();
-    timer.start();
+    // timer.start();
+    
     manager->Pull(addr, page_size, source);
-    timer.stop();
+    memory->pages.setPageState(addr, Page::PageState::Local);    
+
+    // timer.stop();
 }
 
 static void initialize() {
