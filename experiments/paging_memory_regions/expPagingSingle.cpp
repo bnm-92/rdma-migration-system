@@ -47,12 +47,12 @@ int main(int argc, char* argv[]) {
             *((char*)addr) = 'a';
             t.stop();
             addr = (void*) ((char*)addr + page_size);
-            printf("addr is %p and end is %p\n", addr, end_addr);
         }
-        
-        std::vector<double> time = t.getTime();
-        for(double x : time)
-            printf("time taken to instantiate %f with pagesize %lu\n", x, page_size);
+        std::vector<double> vec = multi_timer.getTime();
+        std::vector<double> vec2 = t.getTime();
+        for(unsigned int i=0; i<vec.size(); i++) {
+            printf("fault, %f, pull in fault, %f, pagesize, %lu\n", vec2.at(i), vec.at(i), page_size);
+        }
 
         // double time_taken = t.get_duration_usec();        
         // printf("time taken %f to pull page of size %lu\n", timer.get_duration_usec(), 4096);
@@ -60,7 +60,9 @@ int main(int argc, char* argv[]) {
 
         manager->close(address, container_size, 0);
     }
+
     LogInfo("EXPERIMENT COMPLETE");
+    
     return 0;
 }
 

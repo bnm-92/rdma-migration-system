@@ -16,7 +16,7 @@
 
 #define PAGING 1
 #define ASCII_STARS "**********************************************************************"
-#define DEBUG 1
+#define DEBUG 0
 #define LEVEL 0
 #define LogMessage(Level, SEVERITY, ...) do { if (DEBUG && Level >= LEVEL) {fprintf(stderr, "%s %s:%03u in %s : ", SEVERITY, __FILE__, __LINE__, __FUNCTION__); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); fflush(stderr);}if(Level == 0) exit(1);} while(false)
 
