@@ -74,6 +74,7 @@ public:
     RDMAMemory* PollForClose();
     RDMAMemory* PeekClose();
 
+    void SetPageSize(void* address, size_t page_size);
     void PullAllPages(RDMAMemory* memory);
 //TODO Make private or REMOVE
 private:
@@ -191,13 +192,12 @@ static void sigsegv_advance(int signum, siginfo_t *info_, void* ptr) {
         perror("couldnt mprotect3");
         exit(errno);
     }
-    // TestTimer t = TestTimer();
-    // timer.start();
-    
-    manager->Pull(addr, page_size, source);
-    memory->pages.setPageState(addr, Page::PageState::Local);    
 
-    // timer.stop();
+    multi_timer.start();
+    manager->Pull(addr, page_size, source);
+    multi_timer.stop();
+    
+    memory->pages.setPageState(addr, Page::PageState::Local);    
 }
 
 static void initialize() {

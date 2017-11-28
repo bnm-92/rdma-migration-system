@@ -528,6 +528,14 @@ RDMAMemory* RDMAMemoryManager::getRDMAMemory(void* address) {
 }
 
 inline
+void RDMAMemoryManager::SetPageSize(void* address, size_t page_size){
+    auto x = memory_map.find(address);
+    LogAssert(x != memory_map.find(address), "address not found");
+    RDMAMemory* memory = x->second;
+    memory->pages.setPageSize(page_size);
+}
+
+inline
 void RDMAMemoryManager::PullAllPages(RDMAMemory* memory){
     // auto x = memory_map.find(address);
     // RDMAMemory* memory = x->second;

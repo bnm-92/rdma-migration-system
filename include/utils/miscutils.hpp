@@ -39,6 +39,61 @@ const static uintptr_t ALLOCATABLE_RANGE_END = \
 ((uintptr_t)1 << 47) - TOP_BOTTOM_MARGIN;
 
 
+class MultiTimer {
+public:
+    MultiTimer() : started(false), stopped(false), times() {}
+
+    void start() {
+        if (started) {
+            throw std::logic_error("start() called on already started timer!");
+        }
+        int error = gettimeofday(&begin_st, NULL);
+        if (error) {
+            throw std::runtime_error("gettimeofday failed!");
+        }
+        started = true;
+    }
+    void stop() {
+        if (stopped or not started) {
+            throw std::logic_error("stop() called on a stopped or not-started timer!");
+        }
+        int error = gettimeofday(&end_st, NULL);
+        if (error) {
+            throw std::runtime_error("gettimeofday failed!");
+        }
+        stopped = true;
+        double elapsed = \
+            (end_st.tv_usec - begin_st.tv_usec)
+            + ((end_st.tv_sec - begin_st.tv_sec) * 1000000.0);
+        times.push_back(elapsed);
+        this->reset();
+    }
+    double get_duration_usec() {
+        double elapsed = \
+            (end_st.tv_usec - begin_st.tv_usec)
+            + ((end_st.tv_sec - begin_st.tv_sec) * 1000000.0);
+        return elapsed;
+    }
+
+    void reset() {
+        started = false;
+        stopped = false;
+    }
+
+    std::vector<double> getTime() {
+        return times;
+    }
+
+private:
+    bool started;
+    bool stopped;
+    struct timeval begin_st;
+    struct timeval end_st;
+    std::vector<double> times;
+
+};
+
+static MultiTimer multi_timer;
 
 class TestTimer {
 public:

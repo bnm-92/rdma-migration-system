@@ -11,20 +11,22 @@
 
 int main(int argc, char* argv[]) {
     if (argc < 3) {
-        std::cerr << "please provide all arguments" << std::endl;
+        std::cerr << "./expPagingSingle path_to_config server_id container_size page_size" << std::endl;
         return 1;
     }
 
     int id = atoi(argv[2]);
-    size_t size = 4096;
+    size_t container_size = atoi(argv[4]);
+    size_t page_size = atoi(argv[4]);
     RDMAMemoryManager* memory_manager = new RDMAMemoryManager(argv[1], id);
     manager = memory_manager;
     initialize();
+
     // using String = std::basic_string<char, std::char_traits<char>, PoolBasedAllocator<char>>;
+    RDMAUnorderedMap<int, int> map(memory_manager);
+    map.SetContainerSize(size);
 
     if (id == 0) {
-        RDMAUnorderedMap<int, int> map(memory_manager);
-        map.SetContainerSize(size);
         map.instantiate();
         map[0] = 0;
         map[1] = 1;
@@ -34,9 +36,6 @@ int main(int argc, char* argv[]) {
         while(!map.PollForClose()) {}
 
     } else {
-        RDMAUnorderedMap<int, int> map(memory_manager);
-        map.SetContainerSize(size);
-
         while(!map.PollForTransfer()) {}
         timer = TestTimer();
         TestTimer t = TestTimer();

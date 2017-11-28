@@ -65,3 +65,8 @@ Page::PageState Pages::getPageState(void* address){
     int page_id = ((uintptr_t)address - start_address)/page_size;
     return pages.at(page_id).pagestate;
 }
+
+inline
+void Pages::setPageSize(size_t page_size){
+    this->page_size = page_size;
+}

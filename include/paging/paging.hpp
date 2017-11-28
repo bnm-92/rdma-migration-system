@@ -41,6 +41,8 @@ class Pages{
         Page::PageState getPageState(int page_id);
         Page::PageState getPageState(void* address);
 
+        void setPageSize(size_t page_size);
+
         vector<Page> pages;
     private:
         uintptr_t start_address;
