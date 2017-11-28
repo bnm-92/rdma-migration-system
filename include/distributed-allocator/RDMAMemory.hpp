@@ -178,6 +178,7 @@ static void sigsegv_advance(int signum, siginfo_t *info_, void* ptr) {
     // memory location of the fault
     void* addr = info_->si_addr;
     RDMAMemory* memory = manager->getRDMAMemory(addr);
+    LogAssert(memory != nullptr, "memory not found");
     int source = memory->pair;
     
     addr = memory->pages.getPageAddress(addr);
@@ -196,7 +197,7 @@ static void sigsegv_advance(int signum, siginfo_t *info_, void* ptr) {
     multi_timer.start();
     manager->Pull(addr, page_size, source);
     multi_timer.stop();
-    
+
     memory->pages.setPageState(addr, Page::PageState::Local);    
 }
 
