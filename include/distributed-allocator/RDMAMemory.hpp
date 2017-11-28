@@ -165,7 +165,7 @@ static struct sigaction act;
     and getting the page state
 */
 
-void sigsegv_advance(int signum, siginfo_t *info_, void* ptr) { 
+static void sigsegv_advance(int signum, siginfo_t *info_, void* ptr) { 
     if(manager == nullptr) {
         LogError("Manager is null");
         perror("Manager not declared for static access in sigsegv fault handler");
