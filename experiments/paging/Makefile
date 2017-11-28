@@ -6,12 +6,12 @@ CXXFLAGS := -Wall -g -rdynamic -std=c++11 -MMD -I../../include/utils -I../../inc
 LDFLAGS := ${LDFLAGS} -lrdmacm -libverbs -lpthread
 # -std=c++11: Compile with the C++11 standard.
 # -MMD: Autogenerate dependency files (.d).
-APPS := testPaging
-DEPENDS = testPaging.d
+APPS := expPagingSingle
+DEPENDS = expPagingSingle.d
 
 all: ${APPS}
 
-testPaging: testPaging.o
+expPagingSingle: expPagingSingle.o
 	${CXX} -o $@ $^ ${CXXFLAGS} ${LDFLAGS}
 
 -include ${DEPENDS}

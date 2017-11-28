@@ -16,7 +16,7 @@ void* MemoryPool::allocate(size_t bytes) noexcept {
     void* result = unused_past;
     // But before we return, update the next free address.
     unused_past = (void*) ((char*)unused_past + bytes);
-
+    LogAssert((uintptr_t)unused_past < (uintptr_t)((char*)addr + size), "OUT OF MEMORY");
     return result;
 }
 

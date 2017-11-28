@@ -42,6 +42,12 @@ public:
     */
     void destroy();
 
+
+    /*
+        configurations
+    */
+    void SetContainerSize(size_t size);
+
 protected:
     /*
         Manager for cluster memory
@@ -66,10 +72,10 @@ protected:
     ScopedAllocT alloc;
 
     /*
-        4 GB, Default block size for container
+        Default block size for container
         TODO, add a configurable param from config
     */ 
-    static const size_t DEFAULT_POOL_SIZE = (size_t)1024 * 1024 * 4;
+    size_t DEFAULT_POOL_SIZE = (size_t)1024 * 1024 * 4;
     /*
         Set up the allocator for this container class
         This method requests rdma able memory segment from the manager and 

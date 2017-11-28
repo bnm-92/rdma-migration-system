@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
 
         map.Transfer();
 
-        while(map.PollForClose() == nullptr) {}
+        while(!map.PollForClose()) {}
 
         // RDMAVector<String> vec(memory_manager);
         
