@@ -102,7 +102,12 @@ bool RDMAContainerBase<T>::PollForClose() {
 template <class T>
 inline
 void RDMAContainerBase<T>::Close() {
-    manager->close(rdma_memory->vaddr, rdma_memory->size, rdma_memory->pair);
+    #if PAGING
+        manager->PullAllPages(rdma_memory);
+    #else
+        manager->close(rdma_memory->vaddr, rdma_memory->size, rdma_memory->pair);
+    #endif
+
 }
 
 template <class T>

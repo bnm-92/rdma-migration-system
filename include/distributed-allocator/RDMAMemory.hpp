@@ -74,7 +74,7 @@ public:
     RDMAMemory* PollForClose();
     RDMAMemory* PeekClose();
 
-    void PullAllPages(void* address);
+    void PullAllPages(RDMAMemory* memory);
 //TODO Make private or REMOVE
 private:
     int pull(void* v_addr, int source);

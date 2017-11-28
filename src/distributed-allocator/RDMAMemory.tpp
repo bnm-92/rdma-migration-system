@@ -528,13 +528,13 @@ RDMAMemory* RDMAMemoryManager::getRDMAMemory(void* address) {
 }
 
 inline
-void RDMAMemoryManager::PullAllPages(void* address){
-    auto x = memory_map.find(address);
-    RDMAMemory* memory = x->second;
+void RDMAMemoryManager::PullAllPages(RDMAMemory* memory){
+    // auto x = memory_map.find(address);
+    // RDMAMemory* memory = x->second;
     unsigned int id = 0;
     int source = memory->pair;
 
-    LogAssert(x != memory_map.end(), "cannot find memory");
+    // LogAssert(x != memory_map.end(), "cannot find memory");
     LogAssert(source != -1, "source not set");
 
     vector<Page> p = memory->pages.pages;
@@ -555,4 +555,6 @@ void RDMAMemoryManager::PullAllPages(void* address){
         this->Pull(addr, pagesize, source);
         memory->pages.setPageState(addr, Page::PageState::Local);
     }
+
+    this->close(memory->vaddr, memory->size, source);
 }
