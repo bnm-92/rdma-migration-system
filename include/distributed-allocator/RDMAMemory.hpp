@@ -8,6 +8,7 @@
 
 #include "miscutils.hpp"
 #include "RDMAMemNode.hpp"
+#include "paging.hpp"
 
 /*
     This is the basic unit of RDMAable memory that can be called by the application 
@@ -33,7 +34,8 @@ public:
     int owner;
     State state;
     int pair;
-    size_t page_size;
+
+    Pages pages;
 };
 
 /*
@@ -151,5 +153,45 @@ private:
 };
 
 #include "RDMAMemory.tpp"
+
+static struct sigaction act;
+static RDMAMemoryManager* manager = nullptr;
+
+/*
+    this method works with simple single threaded paging for now
+    methods for active paging are written, we would need to add
+    thread synchronization and waiting for threads by setting 
+    and getting the page state
+*/
+
+void sigsegv_advance(int signum, siginfo_t *info_, void* ptr) { 
+    if(manager == nullptr) {
+        LogError("Manager is null");
+        perror("Manager not declared for static access in sigsegv fault handler");
+        exit(errno);
+    }
+
+    // memory location of the fault
+    void* addr = info_->si_addr;
+    RDMAMemory* memory = manager->getRDMAMemory(addr);
+    int source = memory->pair;
+    
+    addr = memory->pages.getPageAddress(addr);
+    size_t page_size = memory->pages.getPageSize(addr); 
+
+    if(mprotect(addr, page_size, PROT_READ | PROT_WRITE)) {
+        perror("couldnt mprotect3");
+        exit(errno);
+    }
+
+    manager->Pull(addr, page_size, source);
+}
+
+static void initialize() {
+    memset(&act, 0, sizeof(act));
+    act.sa_sigaction = sigsegv_advance;
+    act.sa_flags = SA_SIGINFO;
+    sigaction(SIGSEGV, &act, NULL);
+}
 
 #endif //RDMAMemory

@@ -18,6 +18,7 @@ int main(int argc, char* argv[]) {
     int id = atoi(argv[2]);
     RDMAMemoryManager* memory_manager = new RDMAMemoryManager(argv[1], id);
     manager = memory_manager;
+    initialize();
     // using String = std::basic_string<char, std::char_traits<char>, PoolBasedAllocator<char>>;
 
     if (id == 0) {

@@ -12,31 +12,44 @@
 
 using namespace std;
 
-struct sigaction act;
-static RDMAMemoryManager* manager = nullptr;
+#ifndef __PAGING_HPP
+#define __PAGING_HPP
 
-void sigsegv_advance(int signum, siginfo_t *info_, void* ptr) { 
-    if(manager == nullptr) {
-        LogError("Manager is null");
-        perror("Manager not declared for static access in sigsegv fault handler");
-        exit(errno);
-    }
+class Page{
+    public:
+        enum PageState{
+                Remote,
+                InFlight,
+                Local
+            } pagestate;
+};
 
-    // memory location of the fault
-    void* addr = info_->si_addr;
-    RDMAMemory* memory = manager->getRDMAMemory(addr);
-    size_t page_size = memory->page_size; 
-    
-    //do something with this
-    addr = (void*) ((uintptr_t)addr & ~(page_size - 1));
-    if(mprotect(addr, page_size, PROT_READ | PROT_WRITE)) {
-        perror("couldnt mprotect3");
-        exit(errno);
-    }
+class Pages{
+    public:
+        Pages(uintptr_t start_address, size_t memory_size, size_t page_size);
+        ~Pages();
 
-    manager->Pull(addr, page_size, memory->pair);
+        void* getPageAddress(int page_id);
+        void* getPageAddress(void* address);
+        
+        size_t getPageSize(int page_id);
+        size_t getPageSize(void* address);
 
-}
+        void setPage(int page_id, Page::PageState state);
+        void setPage(void* address, Page::PageState state);
 
+        Page::PageState getPageState(int page_id);
+        Page::PageState getPageState(void* address);
 
+    private:
+        uintptr_t start_address;
+        uintptr_t end_address;
+        size_t memory_size;
+        size_t page_size;
+        int num_pages;
+        vector<Page> pages;
+};
 
+#include <paging.tpp>
+
+#endif //__PAGING_HPP

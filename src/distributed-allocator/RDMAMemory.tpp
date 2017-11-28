@@ -4,20 +4,20 @@
 
 inline
 RDMAMemory::RDMAMemory(int owner, void* addr, size_t size) : 
-    pair(-1) {    
+    pair(-1),
+    pages((uintptr_t)addr, size, 4096) {    
     this->owner = owner;
     this->vaddr = addr;
     this->size = size;
-    this->page_size = 4096;
 }
 
 inline
 RDMAMemory::RDMAMemory(int owner, void* addr, size_t size, size_t page_size) : 
-    pair(-1) {    
+    pair(-1),
+    pages((uintptr_t)addr, size, page_size) {    
     this->owner = owner;
     this->vaddr = addr;
     this->size = size;
-    this->page_size = page_size;
 }
 
 inline

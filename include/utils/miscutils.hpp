@@ -15,7 +15,6 @@
 #include <cstddef>
 
 #define PAGING 1
-#define USE_PAGING 1
 #define ASCII_STARS "**********************************************************************"
 #define DEBUG 1
 #define LEVEL 0
