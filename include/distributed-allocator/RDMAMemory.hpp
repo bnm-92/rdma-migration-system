@@ -61,6 +61,7 @@ public:
     // sending routines
     int Prepare(void* v_addr, size_t size, int destination);
     RDMAMemory* PollForAccept();
+    RDMAMemory* PeekAccept();
     int Transfer(void* v_addr, size_t size, int destination);
 
     //receiving routines
@@ -71,7 +72,7 @@ public:
     //clean up
     void close(void* v_addr, size_t size, int source);
     RDMAMemory* PollForClose();
-    
+    RDMAMemory* PeekClose();
 //TODO Make private or REMOVE
 private:
     int pull(void* v_addr, int source);
@@ -153,9 +154,9 @@ private:
 };
 
 #include "RDMAMemory.tpp"
-
-static struct sigaction act;
+#if PAGING
 static RDMAMemoryManager* manager = nullptr;
+static struct sigaction act;
 
 /*
     this method works with simple single threaded paging for now
@@ -183,8 +184,10 @@ void sigsegv_advance(int signum, siginfo_t *info_, void* ptr) {
         perror("couldnt mprotect3");
         exit(errno);
     }
-
+    // TestTimer t = TestTimer();
+    timer.start();
     manager->Pull(addr, page_size, source);
+    timer.stop();
 }
 
 static void initialize() {
@@ -193,5 +196,5 @@ static void initialize() {
     act.sa_flags = SA_SIGINFO;
     sigaction(SIGSEGV, &act, NULL);
 }
-
+#endif //PAGING
 #endif //RDMAMemory

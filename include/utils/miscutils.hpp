@@ -14,16 +14,16 @@
 #include <assert.h> 
 #include <cstddef>
 
-#define PAGING 1
+#define PAGING 0
 #define ASCII_STARS "**********************************************************************"
-#define DEBUG 1
+#define DEBUG 0
 #define LEVEL 0
-#define LogMessage(Level, SEVERITY, ...) do { if (DEBUG && Level >= LEVEL) {fprintf(stderr, "%s %s:%03u in %s : ", SEVERITY, __FILE__, __LINE__, __FUNCTION__); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); fflush(stderr);}} while(false)
+#define LogMessage(Level, SEVERITY, ...) do { if (DEBUG && Level >= LEVEL) {fprintf(stderr, "%s %s:%03u in %s : ", SEVERITY, __FILE__, __LINE__, __FUNCTION__); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); fflush(stderr);}if(Level == 0) exit(1);} while(false)
 
 #define LogError(...) LogMessage(0, "ERROR", __VA_ARGS__)
 #define LogInfo(...) LogMessage(3, "INFO", __VA_ARGS__)
 #define LogWarning(...) LogMessage(2, "WARNING", __VA_ARGS__)
-#define LogAssertionError(...) LogMessage(1, "ASSERT ERROR", __VA_ARGS__);
+#define LogAssertionError(...) LogMessage(0, "ASSERT ERROR", __VA_ARGS__);
 #define LogAssert(COND, ...) if (!(COND)) { LogAssertionError(__VA_ARGS__) }
 
 static const ptrdiff_t TOP_BOTTOM_MARGIN = \
@@ -111,6 +111,13 @@ public:
         T val = q.front();
         q.pop();
         return val;
+    }
+
+    T peek(void) {
+        std::lock_guard<std::mutex> lock(m);
+        if (q.empty())
+            return NULL;
+        return q.front();
     }
 
     bool empty(void) {

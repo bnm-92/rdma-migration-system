@@ -272,7 +272,7 @@ void RDMAMemoryManager::on_transfer(void* v_addr, size_t size, int source) {
             LogError("Mprotect failed");
             exit(errno);
         }
-    #elif
+    #else
         this->Pull(v_addr, size, source);
         UpdateState(v_addr, RDMAMemory::State::Clean);
     #endif
@@ -482,6 +482,10 @@ RDMAMemory* RDMAMemoryManager::PollForAccept() {
     return incoming_accepts.dequeue(); 
 }
 
+RDMAMemory* RDMAMemoryManager::PeekAccept() {
+    return incoming_accepts.peek(); 
+}
+
 RDMAMemory* RDMAMemoryManager::PollForTransfer() {
     if(incoming_transfers.empty())
         return nullptr;
@@ -492,6 +496,10 @@ RDMAMemory* RDMAMemoryManager::PollForClose() {
     if(incoming_dones.empty())
         return nullptr;
     return incoming_dones.dequeue();
+}
+
+RDMAMemory* RDMAMemoryManager::PeekClose() {
+    return incoming_dones.peek(); 
 }
 
 RDMAMemory* RDMAMemoryManager::getRDMAMemory(void* address) {

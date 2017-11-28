@@ -51,6 +51,7 @@ public:
     // For now, we'll do this by keeping a pointer to the first unused address.
     void* unused_past;
 
+    //the actualy add and size of the rdma memory region
     void* addr;
     size_t size;
 };

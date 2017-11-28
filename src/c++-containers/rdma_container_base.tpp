@@ -60,9 +60,11 @@ bool RDMAContainerBase<T>::Prepare(int destination) {
 template <class T>
 inline
 bool RDMAContainerBase<T>::PollForAccept() {
-    rdma_memory = manager->PollForAccept();
-    if(rdma_memory == nullptr)
+    rdma_memory = manager->PeekAccept();
+    if(rdma_memory == NULL)
         return false;
+    if(rdma_memory->vaddr == mempool->addr)
+        rdma_memory = manager->PollForAccept();        
     return true;
 }
 
@@ -88,15 +90,24 @@ bool RDMAContainerBase<T>::PollForTransfer() {
 template <class T>
 inline
 bool RDMAContainerBase<T>::PollForClose() {
-    RDMAMemory* mem = manager->PollForClose();
-    if(mem == nullptr)
+    RDMAMemory* r_memory = manager->PeekClose();
+    if(r_memory == NULL)
         return false;
-    this->rdma_memory = mem;
-    return true; 
+    if(r_memory->vaddr == mempool->addr)
+        rdma_memory = manager->PollForClose();        
+    return true;
+    
 }
 
 template <class T>
 inline
 void RDMAContainerBase<T>::Close() {
     manager->close(rdma_memory->vaddr, rdma_memory->size, rdma_memory->pair);
+}
+
+template <class T>
+inline
+void RDMAContainerBase<T>::SetContainerSize(size_t size) {
+    if(mempool == nullptr)
+        this->DEFAULT_POOL_SIZE = size;
 }
