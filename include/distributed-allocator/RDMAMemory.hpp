@@ -190,7 +190,7 @@ static void sigsegv_advance(int signum, siginfo_t *info_, void* ptr) {
         return;
 
     if(mprotect(addr, page_size, PROT_READ | PROT_WRITE)) {
-        perror("couldnt mprotect3");
+        perror("couldnt mprotect in sigsegv");
         exit(errno);
     }
 
