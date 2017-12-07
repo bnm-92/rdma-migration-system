@@ -35,3 +35,12 @@ To make this change for a single session, you may run:
 To run a particular functionality you must use Make in a particular test or experiment
 Running `make` will produce the executables outlined in "test or experiment" folder
 The executable server must be started in the order specified by the configuration file
+
+## 1000 ft overview of the codebase
+The codebase is built in modular fashion in include and src
+* **utils:** utility functionality for the entire project, includes the preprocessor configurations of enabling paging
+* **rdma-network:** the entire rdma functionality with the initial client-server design 
+* **distributed-allocator:** (pseudo) distributed allocated that allocates rdma-able regions of memory to processes, it is divided into "RDMAMemory" and "RDMAMemNodes", the allocation is provided by RDMAMemory while the coordination will be performed by the RDMAMemNodes
+* **paging:** The paging code to pull in memory on demand or pre-fetch
+* **c++-containers:** STL containers that have been built on the migratable memory, currently we support vectors and unordered-maps
+
