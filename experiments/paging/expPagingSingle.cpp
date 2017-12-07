@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
         std::cerr << "./expPagingSingle path_to_config server_id container_size page_size" << std::endl;
         return 1;
     }
-
+        printf("EXPERIMENT STARTING");
     int id = atoi(argv[2]);
     size_t container_size = atoi(argv[4]);
     size_t page_size = atoi(argv[4]);
@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
         printf("time taken to instantiate %f with pagesize %d\n", time_taken, 4096);
         map.Close();
     }
-    LogInfo("EXPERIMENT COMPLETE");
+    printf("EXPERIMENT COMPLETE");
     return 0;
 }
 

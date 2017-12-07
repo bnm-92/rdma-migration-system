@@ -26,8 +26,11 @@ int main(int argc, char* argv[]) {
         RDMAUnorderedMap<int, int> map(memory_manager);
         map.SetContainerSize(size);
         map.instantiate();
-        map[0] = 0;
-        map[1] = 1;
+        
+        for (int i=0; i<10000000; i++) {
+            map[i] = 1;
+        }
+
         map.Prepare(1);
         while(!map.PollForAccept()) {}
         
@@ -48,7 +51,10 @@ int main(int argc, char* argv[]) {
         while(!map.PollForTransfer()) {}
 
         map.remote_instantiate();
-        map[3] = 4;
+        
+        for (int i=0; i<10000000; i++) {
+            map[i];
+        }
 
         std::cerr << "Contents: \n";
         for (auto i : map) {
