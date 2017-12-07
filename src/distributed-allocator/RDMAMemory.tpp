@@ -556,7 +556,7 @@ void RDMAMemoryManager::PullAllPages(RDMAMemory* memory){
         memory->pages.setPageState(addr, Page::PageState::InFlight);
 
         if(mprotect(addr, pagesize, PROT_READ | PROT_WRITE)) {
-            perror("couldnt mprotect3");
+            perror("couldnt mprotect in pull all pages");
             exit(errno);
         }
     
