@@ -189,14 +189,14 @@ static void sigsegv_advance(int signum, siginfo_t *info_, void* ptr) {
     else
         return;
 
+    // multi_timer.start();
+    manager->Pull(addr, page_size, source);
+    // multi_timer.stop();
+
     if(mprotect(addr, page_size, PROT_READ | PROT_WRITE)) {
         perror("couldnt mprotect in sigsegv");
         exit(errno);
     }
-
-    multi_timer.start();
-    manager->Pull(addr, page_size, source);
-    multi_timer.stop();
 
     memory->pages.setPageState(addr, Page::PageState::Local);    
 }

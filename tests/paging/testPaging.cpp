@@ -11,7 +11,7 @@
 
 int main(int argc, char* argv[]) {
     if (argc < 3) {
-        std::cerr << "please provide all arguments" << std::endl;
+        std::cerr << "./testPaging path_to_config serverid" << std::endl;
         return 1;
     }
 
