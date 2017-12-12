@@ -284,7 +284,7 @@ void RDMAMemoryManager::on_transfer(void* v_addr, size_t size, int source) {
             RDMAMemory* rmemory = x->second;
             // std::thread(&RDMAMemoryManager::poller_thread_method, this).detach();
             
-            std::thread(&RDMAMemoryManager::PullAllPages, this, rmemory).detach();
+            std::thread(&RDMAMemoryManager::PullAllPagesWithoutClose, this, rmemory).detach();
         #endif
 
     #else
@@ -546,7 +546,7 @@ void RDMAMemoryManager::SetPageSize(void* address, size_t page_size){
 }
 
 inline
-void RDMAMemoryManager::PullAllPages(RDMAMemory* memory){
+void RDMAMemoryManager::PullAllPagesWithoutClose(RDMAMemory* memory){
     // auto x = memory_map.find(address);
     // RDMAMemory* memory = x->second;
     unsigned int id = 0;
@@ -568,7 +568,7 @@ void RDMAMemoryManager::PullAllPages(RDMAMemory* memory){
             //either way, we do not need to do any operations, just continue
             continue;
         }
-    
+
         this->Pull(addr, pagesize, source);
 
         memory->pages.setPageState(addr, PageState::Local);
@@ -578,7 +578,12 @@ void RDMAMemoryManager::PullAllPages(RDMAMemory* memory){
             exit(errno);
         }
     }
+}
 
+inline
+void RDMAMemoryManager::PullAllPages(RDMAMemory* memory){
+    this->PullAllPagesWithoutClose(memory);    
+    int source = memory->pair;
     this->UpdateState(memory->vaddr, RDMAMemory::State::Clean);
     this->close(memory->vaddr, memory->size, source);
 }

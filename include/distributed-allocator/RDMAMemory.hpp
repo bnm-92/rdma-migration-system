@@ -75,6 +75,7 @@ public:
     RDMAMemory* PeekClose();
 
     void SetPageSize(void* address, size_t page_size);
+    void PullAllPagesWithoutClose(RDMAMemory* memory);
     void PullAllPages(RDMAMemory* memory);
 //TODO Make private or REMOVE
 private:
