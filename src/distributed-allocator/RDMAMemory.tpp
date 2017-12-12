@@ -582,7 +582,13 @@ void RDMAMemoryManager::PullAllPagesWithoutClose(RDMAMemory* memory){
 
 inline
 void RDMAMemoryManager::PullAllPages(RDMAMemory* memory){
-    this->PullAllPagesWithoutClose(memory);    
+    check_pages_again:
+    this->PullAllPagesWithoutClose(memory);
+    int check_local_pages = memory->pages.local_pages.load();
+    if(check_local_pages < memory->pages.num_pages) {
+        LogInfo("did not have all pages, trying again");
+        goto check_pages_again;
+    }   
     int source = memory->pair;
     this->UpdateState(memory->vaddr, RDMAMemory::State::Clean);
     this->close(memory->vaddr, memory->size, source);

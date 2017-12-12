@@ -53,13 +53,14 @@ class Pages{
         void setPageSize(size_t page_size);
 
         vector<Page> pages;
+        std::atomic<int> local_pages;
+        int num_pages;
+
     private:
         uintptr_t start_address;
         uintptr_t end_address;
         size_t memory_size;
         size_t page_size;
-        int num_pages;
-        std::atomic<int> local_pages;
 };
 
 #include <paging.tpp>
