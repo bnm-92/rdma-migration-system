@@ -42,28 +42,38 @@ size_t Pages::getPageSize(void* address) {
 }
 
 inline
-void Pages::setPageState(int page_id, Page::PageState state){
-    pages.at(page_id).pagestate = state;
-    if(state == Page::PageState::Local)
+void Pages::setPageState(int page_id, PageState state){
+    pages.at(page_id).ps.store(state);
+    if(state == PageState::Local)
         local_pages++;
 }
 
 inline
-void Pages::setPageState(void* address, Page::PageState state){
+void Pages::setPageState(void* address, PageState state){
     int page_id = ((uintptr_t)address - start_address)/page_size;
-    pages.at(page_id).pagestate = state;
-    local_pages++;
+    pages.at(page_id).ps.store(state);
+    if(state == PageState::Local)
+        local_pages++;
 }
 
 inline
-Page::PageState Pages::getPageState(int page_id){
-    return pages.at(page_id).pagestate;
+bool Pages::setPageStateCAS(void* address, PageState old_state, PageState new_state){
+    int page_id = ((uintptr_t)address - start_address)/page_size;
+    bool ret = pages.at(page_id).ps.compare_exchange_weak(old_state, new_state);
+    if(ret && new_state == PageState::Local)
+        local_pages++;
+    return ret;
 }
 
 inline
-Page::PageState Pages::getPageState(void* address){
+PageState Pages::getPageState(int page_id){
+    return pages.at(page_id).ps;
+}
+
+inline
+PageState Pages::getPageState(void* address){
     int page_id = ((uintptr_t)address - start_address)/page_size;
-    return pages.at(page_id).pagestate;
+    return pages.at(page_id).ps;
 }
 
 inline

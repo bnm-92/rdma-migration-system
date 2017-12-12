@@ -89,7 +89,7 @@ private:
     void* accept(void* v_addr, size_t size, int source);
     int transfer(void* v_addr, size_t size, int destination);
     void on_transfer(void* v_addr, size_t size, int source);
-    
+
     void register_memory(void* v_addr, size_t size, int destination);
     void deregister_memory(void* v_addr, size_t size, int destination);
 
@@ -184,21 +184,20 @@ static void sigsegv_advance(int signum, siginfo_t *info_, void* ptr) {
     addr = memory->pages.getPageAddress(addr);
     size_t page_size = memory->pages.getPageSize(addr); 
 
-    if(memory->pages.getPageState(addr) == Page::PageState::Remote)
-        memory->pages.setPageState(addr, Page::PageState::InFlight);
-    else
+    if(!memory->pages.setPageStateCAS(addr, PageState::Remote, PageState::InFlight)) {
+        // its either in flight or local, if its in flight, we will generate another sigsegv
+        //if its now local then processing should continue
         return;
+    }
 
-    // multi_timer.start();
     manager->Pull(addr, page_size, source);
-    // multi_timer.stop();
+
+    memory->pages.setPageState(addr, PageState::Local);    
 
     if(mprotect(addr, page_size, PROT_READ | PROT_WRITE)) {
         perror("couldnt mprotect in sigsegv");
         exit(errno);
     }
-
-    memory->pages.setPageState(addr, Page::PageState::Local);    
 }
 
 static void initialize() {

@@ -277,6 +277,16 @@ void RDMAMemoryManager::on_transfer(void* v_addr, size_t size, int source) {
             exit(errno);
         }
         UpdateState(v_addr, RDMAMemory::State::Shared);
+
+        #if PREFETCHING
+            auto x = memory_map.find(v_addr);
+            LogAssert(x != memory_map.end(), "could not find memory in allocated list");
+            RDMAMemory* rmemory = x->second;
+            // std::thread(&RDMAMemoryManager::poller_thread_method, this).detach();
+            
+            std::thread(&RDMAMemoryManager::PullAllPages, this, rmemory).detach();
+        #endif
+
     #else
         this->Pull(v_addr, size, source);
         UpdateState(v_addr, RDMAMemory::State::Clean);
@@ -339,10 +349,10 @@ int RDMAMemoryManager::UpdateState(void* memory, RDMAMemory::State state) {
     auto x = this->memory_map.find(memory);
     LogAssert(x != memory_map.end(), "could not find RDMA memory at specified location");
     
-    // if(x == memory_map.end()) {
-    //     LogError("");
-    //     return -1;
-    // }
+    if(x == memory_map.end()) {
+        LogError("Memory invalid");
+        return -1;
+    }
 
     RDMAMemory* mem = x->second;
     mem->state = state;
@@ -547,21 +557,26 @@ void RDMAMemoryManager::PullAllPages(RDMAMemory* memory){
 
     vector<Page> p = memory->pages.pages;
     for (; id<p.size(); id++) {
-        if(p.at(id).pagestate == Page::PageState::Local)
+        if(p.at(id).ps == PageState::Local)
             continue;
 
         void* addr = memory->pages.getPageAddress(id);
         size_t pagesize = memory->pages.getPageSize(id);
 
-        memory->pages.setPageState(addr, Page::PageState::InFlight);
+        if(!memory->pages.setPageStateCAS(addr, PageState::Remote, PageState::InFlight)) {
+            //page was not set to remote, so its either a inflight or local
+            //either way, we do not need to do any operations, just continue
+            continue;
+        }
+    
+        this->Pull(addr, pagesize, source);
 
+        memory->pages.setPageState(addr, PageState::Local);
+        
         if(mprotect(addr, pagesize, PROT_READ | PROT_WRITE)) {
             perror("couldnt mprotect in pull all pages");
             exit(errno);
         }
-    
-        this->Pull(addr, pagesize, source);
-        memory->pages.setPageState(addr, Page::PageState::Local);
     }
 
     this->UpdateState(memory->vaddr, RDMAMemory::State::Clean);

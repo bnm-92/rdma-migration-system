@@ -15,10 +15,11 @@
 #include <cstddef>
 
 #define PAGING 1
+#define PREFETCHING 1
 #define ASCII_STARS "**********************************************************************"
 #define DEBUG 0
-#define LEVEL 0
-#define LogMessage(Level, SEVERITY, ...) do { if (DEBUG && Level >= LEVEL) {fprintf(stderr, "%s %s:%03u in %s : ", SEVERITY, __FILE__, __LINE__, __FUNCTION__); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); fflush(stderr);}if(Level == 0) exit(1);} while(false)
+#define LEVEL 3
+#define LogMessage(Level, SEVERITY, ...) do { if (DEBUG && Level >= LEVEL) {fprintf(stderr, "%s %s:%03u in %s : ", SEVERITY, __FILE__, __LINE__, __FUNCTION__); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); fflush(stderr);}if(Level == 0) {fflush(stderr); exit(1);}} while(false)
 
 #define LogError(...) LogMessage(0, "ERROR", __VA_ARGS__)
 #define LogInfo(...) LogMessage(3, "INFO", __VA_ARGS__)

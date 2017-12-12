@@ -7,6 +7,7 @@
 #include <sys/mman.h>
 #include <limits.h>    /* for PAGESIZE */
 #include <cstring>
+#include <atomic>
 
 #include "RDMAMemory.hpp"
 
@@ -15,13 +16,20 @@ using namespace std;
 #ifndef __PAGING_HPP
 #define __PAGING_HPP
 
+enum class PageState{
+    Remote,
+    InFlight,
+    Local
+};
+
 class Page{
-    public:
-        enum PageState{
-                Remote,
-                InFlight,
-                Local
-            } pagestate = PageState::Remote;
+public:
+    Page() : ps(PageState::Remote) {};
+    ~Page(){};
+    Page(const Page &p) {
+        ps.store(p.ps);
+    };
+    std::atomic<PageState> ps;
 };
 
 class Pages{
@@ -35,11 +43,12 @@ class Pages{
         size_t getPageSize(int page_id);
         size_t getPageSize(void* address);
 
-        void setPageState(int page_id, Page::PageState state);
-        void setPageState(void* address, Page::PageState state);
+        void setPageState(int page_id, PageState state);
+        void setPageState(void* address, PageState state);
+        bool setPageStateCAS(void* address, PageState old_state, PageState new_state);
 
-        Page::PageState getPageState(int page_id);
-        Page::PageState getPageState(void* address);
+        PageState getPageState(int page_id);
+        PageState getPageState(void* address);
 
         void setPageSize(size_t page_size);
 
