@@ -297,6 +297,7 @@ inline
 void RDMAMemoryManager::close(void* v_addr, size_t size, int source) {
     uintptr_t conn_id = this->coordinator.connections[source];
     this->coordinator.getServer(source, conn_id)->send_close(conn_id, v_addr, size);
+    this->deregister_memory(v_addr, size, source);
 }
 
 /*
