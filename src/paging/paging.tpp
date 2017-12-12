@@ -45,7 +45,7 @@ inline
 void Pages::setPageState(int page_id, PageState state){
     pages.at(page_id).ps.store(state);
     if(state == PageState::Local)
-        local_pages++;
+        local_pages.fetch_add(1, std::memory_order_relaxed);
 }
 
 inline
@@ -53,7 +53,7 @@ void Pages::setPageState(void* address, PageState state){
     int page_id = ((uintptr_t)address - start_address)/page_size;
     pages.at(page_id).ps.store(state);
     if(state == PageState::Local)
-        local_pages++;
+        local_pages.fetch_add(1, std::memory_order_relaxed);
 }
 
 inline
@@ -61,7 +61,7 @@ bool Pages::setPageStateCAS(void* address, PageState old_state, PageState new_st
     int page_id = ((uintptr_t)address - start_address)/page_size;
     bool ret = pages.at(page_id).ps.compare_exchange_weak(old_state, new_state);
     if(ret && new_state == PageState::Local)
-        local_pages++;
+        local_pages.fetch_add(1, std::memory_order_relaxed);
     return ret;
 }
 

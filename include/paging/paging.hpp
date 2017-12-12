@@ -59,7 +59,7 @@ class Pages{
         size_t memory_size;
         size_t page_size;
         int num_pages;
-        int local_pages;
+        std::atomic<int> local_pages;
 };
 
 #include <paging.tpp>
