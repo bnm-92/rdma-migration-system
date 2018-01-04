@@ -230,6 +230,61 @@ bool RDMAServerPrototype::checkForMessage(uintptr_t conn_id) {
     return !conn->recv_queue.empty();
 }
 
+inline
+void RDMAServerPrototype::rdma_read_async(
+    uintptr_t conn_id, void* local_addr, void* remote_addr, size_t len, void (*callback)(void*), void* data
+) {
+    std::lock_guard<std::mutex> guard(user_mutex);
+    struct rdma_connection* conn = (struct rdma_connection*) conn_id;
+
+    // First, we have to fetch the lkey and rkey for these regions
+    // from our registration information.
+    // Since we can, we'll do a lot of error checking here,
+    // and make sure that the region is indeed registered.
+    // Also, I know this is runs in time linear wrt number of registrations,
+    // but we expect that number to be very small :)
+    uint32_t lkey = 0;
+    bool lkey_found = false;
+    void* local_addr_end = (void*) ((char*)local_addr + len);
+    for (const auto& it : conn->registrations) {
+        void* addr = it.first;
+        void* end_addr = (void*) ((char*)addr + it.second->length);
+        if (local_addr >= addr and local_addr_end <= end_addr) {
+            lkey_found = true;
+            lkey = it.second->lkey;
+            break;
+        }
+    }
+    if (not lkey_found) {
+        throw std::logic_error(
+            "rdma_read called on locally unregistered memory!");
+    }
+
+    uint32_t rkey = 0;
+    bool rkey_found = false;
+    void* remote_addr_end = (void*) ((char*)remote_addr + len);
+    for (const auto& it : conn->remote_registrations) {
+        void* addr = it.first;
+        void* end_addr = (void*) ((char*)addr + it.second.length);
+        if (remote_addr >= addr and remote_addr_end <= end_addr) {
+            rkey_found = true;
+            rkey = it.second.rkey;
+            break;
+        }
+    }
+    if (not rkey_found) {
+        throw std::logic_error(
+            "rdma_read called on remotely unregistered memory!");
+    }
+
+    LogInfo("posting read to rdma queue");
+    // Do the read.
+    post_rdma_read(conn, local_addr, lkey, remote_addr, rkey, len, callback, data);
+    
+    // And wait for the read to finish.
+    LogInfo("read posted, will complete async");
+    return;
+}
 
 inline
 void RDMAServerPrototype::rdma_read(
@@ -582,6 +637,11 @@ void RDMAServerPrototype::on_completion(struct ibv_wc* work_completion) {
     struct work_context* work_ctx = (struct work_context*) work_completion->wr_id;
     if (work_ctx->sem != NULL) {
         sem_post(work_ctx->sem);
+    }
+
+    if (work_ctx->call_back != NULL) {
+        work_ctx->call_back(work_ctx->data);
+        free(work_ctx->data);
     }
     delete work_ctx;
 
@@ -1011,6 +1071,49 @@ void RDMAServerPrototype::post_rdma_send(
     struct ibv_send_wr* bad_wr;
 
     ASSERT_ZERO(ibv_post_send(conn->rdma_socket->qp, &send_request, &bad_wr));
+}
+
+inline
+void RDMAServerPrototype::post_rdma_read(
+    struct rdma_connection* conn,
+    void* local_addr, uint32_t lkey,
+    void* remote_addr, uint32_t rkey,
+    size_t length, void (*callback)(void*), void* data
+) {
+    // Create the work context.
+    struct work_context* work_ctx = new work_context();
+    work_ctx->conn = conn;
+    work_ctx->addr = local_addr;
+    work_ctx->sem = NULL;
+    work_ctx->call_back = callback;
+    work_ctx->data = data;
+
+    // Create the sge.
+    struct ibv_sge sge;
+    memset(&sge, 0, sizeof(sge));
+    // And attach local memory info.
+    sge.addr = (uintptr_t)local_addr;
+    sge.length = length;
+    sge.lkey = lkey;
+
+    // Create the work request.
+    struct ibv_send_wr send_request;
+    memset(&send_request, 0, sizeof(send_request));
+    // Attach remote memory info.
+    send_request.wr.rdma.remote_addr = (uintptr_t)remote_addr;
+    send_request.wr.rdma.rkey = rkey;
+    // Boilerplate: set opcode and flags; attach sge; attach work context.
+    send_request.opcode = IBV_WR_RDMA_READ;
+    send_request.send_flags = IBV_SEND_SIGNALED;
+    send_request.sg_list = &sge;
+    send_request.num_sge = 1;
+    send_request.next = NULL;
+    send_request.wr_id = (uintptr_t)work_ctx;
+
+    struct ibv_send_wr* bad_wr;
+
+    ASSERT_ZERO(ibv_post_send(
+        conn->rdma_socket->qp, &send_request, &bad_wr));
 }
 
 inline

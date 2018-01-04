@@ -97,6 +97,7 @@ public:
     // Precondition: you have called register_meomry on a region that includes
     // local_addr and length, and ditto for the remote server and remote_addr.
     void rdma_read(uintptr_t conn_id, void* local_addr, void* remote_addr, size_t len);
+    void rdma_read_async(uintptr_t conn_id, void* local_addr, void* remote_addr, size_t len,void (*callback)(void*), void* data);
 
     void rdma_write(uintptr_t conn_id, void* local_addr, void* remote_addr, size_t len);
 
@@ -263,11 +264,18 @@ protected:
         void* remote_addr, uint32_t rkey,
         size_t length, sem_t* sem);
 
-        void post_rdma_write(
-            struct rdma_connection* conn,
-            void* local_addr, uint32_t lkey,
-            void* remote_addr, uint32_t rkey,
-            size_t length, sem_t* sem);
+    void post_rdma_read(
+        struct rdma_connection* conn,
+        void* local_addr, uint32_t lkey,
+        void* remote_addr, uint32_t rkey,
+        size_t length,
+        void (*callback)(void*), void* data);
+
+    void post_rdma_write(
+        struct rdma_connection* conn,
+        void* local_addr, uint32_t lkey,
+        void* remote_addr, uint32_t rkey,
+        size_t length, sem_t* sem);
 
     // Helper for creating default RDMA connection parameters.
     void build_conn_param(struct rdma_conn_param*);
@@ -366,12 +374,15 @@ struct rdma_connection {
 // attached to the corresponding work completion that is provided back to us.
 struct work_context {
     // The connection under which this work request happened.
-    struct rdma_connection* conn;
+    struct rdma_connection* conn = NULL;
     // Optionally, an address of the local memory region associated with this
     // work request. (What this actually is depends on the context.)
-    void* addr;
+    void* addr = NULL;
     // An optional semaphore to smash when the work request is completed.
-    sem_t* sem;
+    sem_t* sem = NULL;
+    //functional callback
+    void (*call_back)(void*) = NULL;
+    void* data = NULL;
 };
 
 // This will be the standard top-level struct we pass around in RDMA sends
