@@ -283,8 +283,11 @@ void RDMAMemoryManager::on_transfer(void* v_addr, size_t size, int source) {
             LogAssert(x != memory_map.end(), "could not find memory in allocated list");
             RDMAMemory* rmemory = x->second;
             // std::thread(&RDMAMemoryManager::poller_thread_method, this).detach();
-            
-            std::thread(&RDMAMemoryManager::PullAllPagesWithoutClose, this, rmemory).detach();
+            #if ASYNC_PREFETCHING
+                std::thread(&RDMAMemoryManager::PullAllPagesWithoutCloseAsync, this, rmemory).detach();
+            #else
+                std::thread(&RDMAMemoryManager::PullAllPagesWithoutClose, this, rmemory).detach();
+            #endif
         #endif
 
     #else
@@ -308,6 +311,14 @@ inline
 int RDMAMemoryManager::pull(void* v_addr, int source){
     uintptr_t conn_id = this->coordinator.connections[source];
     this->coordinator.getServer(source, conn_id)->rdma_read(conn_id, v_addr, v_addr, this->memory_map.find(v_addr)->second->size);
+    return 0;
+}
+
+inline
+int RDMAMemoryManager::PullAsync(void* v_addr, size_t size, int source, void (*callback)(void*), void* data){
+    uintptr_t conn_id = this->coordinator.connections[source];
+    LogInfo("pulling memory at %p of size %zu", v_addr, size);
+    this->coordinator.getServer(source, conn_id)->rdma_read_async(conn_id, v_addr, v_addr, size, callback, data);
     return 0;
 }
 
@@ -546,6 +557,87 @@ void RDMAMemoryManager::SetPageSize(void* address, size_t page_size){
     memory->pages.setPageSize(page_size);
 }
 
+inline 
+void RDMAMemoryManager::MarkPageLocal(RDMAMemory* memory, void* address, size_t size) {
+    if(mprotect(address, size, PROT_READ | PROT_WRITE)) {
+        perror("couldnt mprotect in pull all pages");
+        exit(errno);
+    }    
+
+    memory->pages.setPageState(address, PageState::Local);
+}
+
+inline 
+void MarkPageLocalCB(void* data) {
+    RDMAMemory* memory = (RDMAMemory*)(*((void**)data));
+    data = (void*)((char*)data + sizeof(RDMAMemory*));
+
+    void* address = *((void**)data);
+    data = (void*)((char*)data + sizeof(void*));
+     
+    size_t size = *((size_t*)data);
+    data = (void*)((char*)data + sizeof(size_t));    
+    if(mprotect(address, size, PROT_READ | PROT_WRITE)) {
+        perror("couldnt mprotect in pull all pages");
+        exit(errno);
+    }    
+    
+    std::atomic<int64_t>* x = (std::atomic<int64_t>*)*((void**)data);
+        
+    (*x).fetch_sub(1);
+
+    memory->pages.setPageState(address, PageState::Local);
+
+}
+
+inline
+void RDMAMemoryManager::PullAllPagesWithoutCloseAsync(RDMAMemory* memory){
+    // auto x = memory_map.find(address);
+    // RDMAMemory* memory = x->second;
+    unsigned int id = 0;
+    int source = memory->pair;
+    std::atomic<int64_t>* rate_limiter = (std::atomic<int64_t>*) malloc(sizeof(std::atomic<int64_t>));
+
+    LogAssert(source != -1, "source not set");
+
+    vector<Page> p = memory->pages.pages;
+    for (; id<p.size(); id++) {
+        if(p.at(id).ps == PageState::Local)
+            continue;
+
+        while (*rate_limiter > max_async_pending){}
+
+        (*rate_limiter).fetch_add(1);
+
+        void* addr = memory->pages.getPageAddress(id);
+        size_t pagesize = memory->pages.getPageSize(id);
+
+        if(!memory->pages.setPageStateCAS(addr, PageState::Remote, PageState::InFlight)) {
+            //page was not set to remote, so its either a inflight or local
+            //either way, we do not need to do any operations, just continue
+            continue;
+        }
+
+        void* data_ = (void*)malloc(sizeof(RDMAMemory*) + sizeof(void*) + sizeof(size_t) + sizeof(std::atomic<int64_t>*));
+        void* data = data_;
+
+        *((void**)data) = (void*)memory;
+        data = (void*)((char*)data + sizeof(RDMAMemory*));
+
+        *((void**)data) = addr;
+        data = (void*)((char*)data + sizeof(void*));
+        memcpy(data, &pagesize, sizeof(pagesize));
+        
+        data = (void*)((char*)data + sizeof(pagesize));
+        
+        *((void**)data) = (void*)rate_limiter;
+
+        void(*callback)(void*);
+        callback = MarkPageLocalCB;
+        this->PullAsync(addr, pagesize, source, callback, data_);
+    } 
+}
+
 inline
 void RDMAMemoryManager::PullAllPagesWithoutClose(RDMAMemory* memory){
     // auto x = memory_map.find(address);
@@ -571,13 +663,7 @@ void RDMAMemoryManager::PullAllPagesWithoutClose(RDMAMemory* memory){
         }
 
         this->Pull(addr, pagesize, source);
-
-        memory->pages.setPageState(addr, PageState::Local);
-        
-        if(mprotect(addr, pagesize, PROT_READ | PROT_WRITE)) {
-            perror("couldnt mprotect in pull all pages");
-            exit(errno);
-        }
+        this->MarkPageLocal(memory, addr, pagesize);
     }
 }
 

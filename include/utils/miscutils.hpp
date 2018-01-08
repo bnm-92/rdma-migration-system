@@ -16,6 +16,7 @@
 
 #define PAGING 1
 #define PREFETCHING 1
+#define ASYNC_PREFETCHING 0
 #define ASCII_STARS "**********************************************************************"
 #define DEBUG 0
 #define LEVEL 3
@@ -26,6 +27,8 @@
 #define LogWarning(...) LogMessage(2, "WARNING", __VA_ARGS__)
 #define LogAssertionError(...) LogMessage(0, "ASSERT ERROR", __VA_ARGS__);
 #define LogAssert(COND, ...) if (!(COND)) { LogAssertionError(__VA_ARGS__) }
+
+static int max_async_pending = 10;
 
 static const ptrdiff_t TOP_BOTTOM_MARGIN = \
 // This is 2^44, or 0x 1000 0000 0000, or about 16 TiB of space.
@@ -38,7 +41,6 @@ const static uintptr_t ALLOCATABLE_RANGE_END = \
 // This is hex: 0x 7000 0000 0000
 // which is at 112 TiB into the address space.
 ((uintptr_t)1 << 47) - TOP_BOTTOM_MARGIN;
-
 
 class MultiTimer {
 public:

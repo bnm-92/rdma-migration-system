@@ -891,7 +891,7 @@ void RDMAServerPrototype::build_resources_for_device(
     ASSERT_NONZERO(resources->completion_channel = ibv_create_comp_channel(dev_ctx));
 
     // Create the completion queue, and register the channel with it.
-    int num_entries = 10; // Arbitrary.
+    int num_entries = 256; // Arbitrary.
     // The completion queue allows you to attach an arbitrary context object
     // to it, but we won't be using that right now.
     void* cq_context = NULL;

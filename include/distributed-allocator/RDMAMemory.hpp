@@ -39,6 +39,12 @@ public:
 };
 
 /*
+    global functions/headers for async pulls
+*/
+
+void MarkPageLocalCB(void* data);
+
+/*
     A server will access memory regions from RDMAMemoryFactory
     - it will be initialized with the upper and lower region along with a coordinator
     - its also useed for managing the servers RDMAableMemory Regions
@@ -75,10 +81,14 @@ public:
     RDMAMemory* PeekClose();
 
     void SetPageSize(void* address, size_t page_size);
+    void MarkPageLocal(RDMAMemory* memory, void* address, size_t size);
+    void PullAllPagesWithoutCloseAsync(RDMAMemory* memory);
     void PullAllPagesWithoutClose(RDMAMemory* memory);
     void PullAllPages(RDMAMemory* memory);
 //TODO Make private or REMOVE
 private:
+    int PullAsync(void* v_addr, size_t size, int source, void (*callback)(void*), void* data);
+
     int pull(void* v_addr, int source);
     int push(void* v_addr, int destination);
     int pull(void* v_addr, size_t size);
@@ -190,9 +200,8 @@ static void sigsegv_advance(int signum, siginfo_t *info_, void* ptr) {
         //if its now local then processing should continue
         return;
     }
-
+    
     manager->Pull(addr, page_size, source);
-
     memory->pages.setPageState(addr, PageState::Local);    
 
     if(mprotect(addr, page_size, PROT_READ | PROT_WRITE)) {
