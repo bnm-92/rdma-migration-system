@@ -242,6 +242,16 @@ public:
    */
   bool retryable(int code);
 
+  /**
+   * Set Debug level to the file specified/stderr
+   * Levels are:
+   * ZOO_LOG_LEVEL_ERROR
+   * ZOO_LOG_LEVEL_WARN
+   * ZOO_LOG_LEVEL_INFO 
+   * ZOO_LOG_LEVEL_DEBUG
+  */
+  void SetDebugLevel(ZooLogLevel logLevel);
+
 
 private:
     /* ZooKeeper instances are not copyable. */

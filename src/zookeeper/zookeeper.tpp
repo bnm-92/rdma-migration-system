@@ -44,6 +44,10 @@ void ZooKeeper::Close() {
     zh = nullptr;
 }
 
+void ZooKeeper::SetDebugLevel(ZooLogLevel logLevel) {
+    zoo_set_debug_level(logLevel);
+}
+
 int ZooKeeper::getState() {
     if(zh != nullptr)
         return zoo_state(zh);
