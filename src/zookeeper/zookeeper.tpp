@@ -28,7 +28,7 @@ FILE * file) :
     }
     zoo_set_debug_level(ZOO_LOG_LEVEL_WARN);
     
-    zh = zookeeper_init(list_zservers.c_str(), synch_connection_CB, this->sessionTimeout, &z_cid, (void*)this, 0);
+    zh = zookeeper_init(list_zservers.c_str(), global_watch_CB, this->sessionTimeout, &z_cid, (void*)this, 0);
     if(!zh) {
         LogError("couldn't create zookeeper handle");
     }
@@ -83,29 +83,52 @@ int ZooKeeper::remove(const std::string& path, int version) {
     return zoo_delete(this->zh, path.c_str(), version);
 }
 
-int ZooKeeper::exists(const std::string& path, bool watch, Stat* stat) {
-    return zoo_exists(this->zh, path.c_str(), watch, stat);
+int ZooKeeper::exists(const std::string& path, Stat* stat) {
+    return zoo_exists(this->zh, path.c_str(), false, stat);
+}
+
+int ZooKeeper::wexists(const std::string& path, Stat* stat, watcher_fn watcher, void* watcherCtx){
+    return zoo_wexists(this->zh, path.c_str(), watcher, watcherCtx, stat);
 }
 
 int ZooKeeper::get(
     const std::string& path,
-    bool watch,
     std::string* result,
     Stat* stat) {
         int buflen = BUFLEN;
         result = new std::string(buflen, '\0');
-        int rc = zoo_get(this->zh, path.c_str(), watch, &(*result)[0], &buflen, stat);
+        int rc = zoo_get(this->zh, path.c_str(), false, &(*result)[0], &buflen, stat);
         if(buflen != -1)
             result->resize(strlen(result->c_str()));
         return rc;
 }
 
+int ZooKeeper::wget(const std::string& path, std::string* result, Stat* stat, watcher_fn watcher, void* watcherCtx) {
+    int buflen = BUFLEN;
+    result = new std::string(buflen, '\0');
+    int rc = zoo_wget(this->zh, path.c_str(), watcher, watcherCtx, &(*result)[0], &buflen, stat);
+    if(buflen != -1)
+        result->resize(strlen(result->c_str()));
+    return rc;
+}
+
 int ZooKeeper::getChildren(
     const std::string& path,
-    bool watch,
     std::vector<std::string>* results) {
     String_vector sv;
-    int rc = zoo_get_children(this->zh, path.c_str(), watch, &sv);
+    int rc = zoo_get_children(this->zh, path.c_str(), false, &sv);
+    int entries = sv.count;
+    for (int i=0; i<entries; i++) {
+        std::string s((*sv.data) + i);
+        results->push_back(s);
+    }
+    return rc;
+}
+
+
+int ZooKeeper::wgetChildren(const std::string& path, std::vector<std::string>* results, watcher_fn watcher, void* watcherCtx) {
+    String_vector sv;
+    int rc = zoo_wget_children(this->zh, path.c_str(), watcher, watcherCtx, &sv);
     int entries = sv.count;
     for (int i=0; i<entries; i++) {
         std::string s((*sv.data) + i);
@@ -123,4 +146,42 @@ int ZooKeeper::set(const std::string& path, const std::string& data, int version
 
 std::string ZooKeeper::message(int code) const {
       return std::string(zerror(code));
+}
+
+bool ZooKeeper::retryable(int code) {
+  switch (code) {
+    case ZCONNECTIONLOSS:
+    case ZOPERATIONTIMEOUT:
+    case ZSESSIONEXPIRED:
+    case ZSESSIONMOVED:
+      return true;
+
+    case ZOK: // No need to retry!
+
+    case ZSYSTEMERROR: // Should not be encountered, here for completeness.
+    case ZRUNTIMEINCONSISTENCY:
+    case ZDATAINCONSISTENCY:
+    case ZMARSHALLINGERROR:
+    case ZUNIMPLEMENTED:
+    case ZBADARGUMENTS:
+    case ZINVALIDSTATE:
+
+    case ZAPIERROR: // Should not be encountered, here for completeness.
+    case ZNONODE:
+    case ZNOAUTH:
+    case ZBADVERSION:
+    case ZNOCHILDRENFOREPHEMERALS:
+    case ZNODEEXISTS:
+    case ZNOTEMPTY:
+    case ZINVALIDCALLBACK:
+    case ZINVALIDACL:
+    case ZAUTHFAILED:
+    case ZCLOSING:
+    case ZNOTHING: // Is this used? It's not exposed in the Java API.
+      return false;
+
+    default:
+      LogError("Unknown ZooKeeper code:%d", code);
+    //   UNREACHABLE(); // Make compiler happy.
+  }
 }

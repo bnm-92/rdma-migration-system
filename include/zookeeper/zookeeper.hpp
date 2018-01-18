@@ -3,6 +3,8 @@
  * ZooKeeper C++ Wrapper API
  * This library only supports features needed for RaMP and is tested to meet its specifications
  * User discretion advised
+ * The API style, comments and method definition are copied from project mesos however underlying implementation 
+ * only uses zookeeper c client API
  * 
  */
 
@@ -136,10 +138,7 @@ public:
    *
    * \param path the name of the node. Expressed as a file name with
    *    slashes separating ancestors of the node.
-   * \param watch if true, a watch will be set at the server to
-   *    notify the client if the node changes. The watch will be set even
-   *    if the node does not exist. This allows clients to watch for
-   *    nodes to appear.
+   * \param watch has been removed, can only be set when a callback is specified, please use wget
    * \param stat the return stat value of the node.
    * \return return code of the function call.
    * ZOK operation completed successfully
@@ -149,15 +148,16 @@ public:
    * ZINVALIDSTATE - state is ZOO_SESSION_EXPIRED_STATE or ZOO_AUTH_FAILED_STATE
    * ZMARSHALLINGERROR - failed to marshall a request; possibly, out of memory
    */
-  int exists(const std::string& path, bool watch, Stat* stat);
+  int exists(const std::string& path, Stat* stat);
+
+  int wexists(const std::string& path, Stat* stat, watcher_fn watcher, void* watcherCtx);
 
   /**
    * \brief gets the data associated with a node synchronously.
    *
    * \param path the name of the node. Expressed as a file name with
    *    slashes separating ancestors of the node.
-   * \param watch if nonzero, a watch will be set at the server to
-   *    notify the client if the node changes.
+   * \param watch has been removed, can only be set when a callback is specified, please use wget
    * \param result the data returned by the server
    * \param stat if not `nullptr`, will hold the value of stat for the path
    *    on return.
@@ -171,17 +171,22 @@ public:
    */
   int get(
       const std::string& path,
-      bool watch,
       std::string* result,
       Stat* stat);
+
+  int wget(
+      const std::string& path,
+      std::string* result,
+      Stat* stat, 
+      watcher_fn watcher, 
+      void* watcherCtx);
 
   /**
    * \brief lists the children of a node synchronously.
    *
    * \param path the name of the node. Expressed as a file name with
    *   slashes separating ancestors of the node.
-   * \param watch if true, a watch will be set at the server to notify
-   *   the client if the node changes.
+   * \param watch has been removed, can only be set when a callback is specified, please use wgetChildred
    * \param results return value of children paths.
    * \return the return code of the function.
    * ZOK operation completed successfully
@@ -193,8 +198,13 @@ public:
    */
   int getChildren(
       const std::string& path,
-      bool watch,
       std::vector<std::string>* results);
+
+  int wgetChildren(
+      const std::string& path,
+      std::vector<std::string>* results,
+      watcher_fn watcher, 
+      void* watcherCtx);
 
   /**
    * \brief sets the data associated with a node.
@@ -222,6 +232,16 @@ public:
    * \return string message corresponding to return code.
    */
   std::string message(int code) const;
+
+    /**
+   * \brief returns whether or not the specified return code implies
+   * the operation can be retried "as is" (i.e., without needing to
+   * change anything).
+   *
+   * \return bool indicating whether operation can be retried.
+   */
+  bool retryable(int code);
+
 
 private:
     /* ZooKeeper instances are not copyable. */
@@ -266,8 +286,19 @@ private:
     */
 };
 
-// global watcher callbacks, passed the this parameter as context
-void synch_connection_CB (zhandle_t *zzh, int type, int state, const char *path, void* context) {
+/**
+ * global watcher callbacks, passed the this parameter as context, this callback will be executed whenever
+ * a watch is set without a function definition, please note, this API prevents this by removing the watch bool
+ * parameter and sets it as false by default
+ * 
+ * Please use wget, wexist and other w operations to set watches and set callbacks and context as the following method
+    typedef void (*watcher_fn)(zhandle_t *zh, int type, int state, const char *path,void *watcherCtx);
+    simply use a lambda as 
+    [](zhandle_t *zh, int type, int state, const char *path,void *watcherCtx) {
+        your code
+    }
+*/ 
+void global_watch_CB (zhandle_t *zzh, int type, int state, const char *path, void* context) {
     ZooKeeper *zk = (ZooKeeper*)context;
     if (type == ZOO_SESSION_EVENT) {
         if (state == ZOO_CONNECTED_STATE) {
