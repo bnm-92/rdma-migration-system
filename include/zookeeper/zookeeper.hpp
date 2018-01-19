@@ -242,6 +242,12 @@ public:
    */
   bool retryable(int code);
 
+    /**
+     * Converts return codes to readable values, simple conversion from enum to std::string
+     * 
+    */
+  std::string toString(int code);
+
   /**
    * Set Debug level to the file specified/stderr
    * Levels are:

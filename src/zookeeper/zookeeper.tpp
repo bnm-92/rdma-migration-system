@@ -189,3 +189,60 @@ bool ZooKeeper::retryable(int code) {
     //   UNREACHABLE(); // Make compiler happy.
   }
 }
+
+std::string ZooKeeper::toString(int code) {
+  switch (code) {
+    case ZCONNECTIONLOSS:
+        return "ZCONNECTIONLOSS";
+    case ZOPERATIONTIMEOUT:
+        return "ZOPERATIONTIMEOUT";
+    case ZSESSIONEXPIRED:
+        return "ZSESSIONEXPIRED";
+    case ZSESSIONMOVED:
+        return "ZSESSIONMOVED";
+    case ZOK:
+        return "ZOK";
+    case ZSYSTEMERROR: // Should not be encountered, here for completeness.
+        return "ZSYSTEMERROR";
+    case ZRUNTIMEINCONSISTENCY:
+        return "ZRUNTIMEINCONSISTENCY";
+    case ZDATAINCONSISTENCY:
+        return "ZDATAINCONSISTENCY";
+    case ZMARSHALLINGERROR:
+        return "ZMARSHALLINGERROR";
+    case ZUNIMPLEMENTED:
+        return "ZUNIMPLEMENTED";
+    case ZBADARGUMENTS:
+        return "ZBADARGUMENTS";
+    case ZINVALIDSTATE:
+        return "ZINVALIDSTATE";
+    case ZAPIERROR:
+        return "ZAPIERROR";
+    case ZNONODE:
+        return "ZNONODE";
+    case ZNOAUTH:
+        return "ZNOAUTH";
+    case ZBADVERSION:
+        return "ZBADVERSION";
+    case ZNOCHILDRENFOREPHEMERALS:
+        return "ZNOCHILDRENFOREPHEMERALS";
+    case ZNODEEXISTS:
+        return "ZNODEEXISTS";
+    case ZNOTEMPTY:
+        return "ZNOTEMPTY";    
+    case ZINVALIDCALLBACK:
+        return "ZINVALIDCALLBACK";    
+    case ZINVALIDACL:
+        return "ZINVALIDACL";    
+    case ZAUTHFAILED:
+        return "ZAUTHFAILED";    
+    case ZCLOSING:
+        return "ZCLOSING";        
+    case ZNOTHING:
+        return "ZNOTHING";
+    
+    default:
+      return "Unknown Error";
+    
+  } 
+}
