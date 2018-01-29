@@ -44,8 +44,9 @@ int main(int argc, char* argv[]) {
         while(!map.PollForTransfer()) {}
 
         map.remote_instantiate();
-        map.PullAsync(10);
-
+        std::thread t(&RDMAUnorderedMap<int, int>::PullAsync, &map, 10);
+        // map.PullAsync(10);
+        t.join();
         map[3] = 4;
 
         std::cerr << "Contents: \n";
