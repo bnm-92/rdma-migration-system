@@ -299,6 +299,13 @@ void RDMAMemoryManager::on_transfer(void* v_addr, size_t size, int source) {
 
 inline
 void RDMAMemoryManager::close(void* v_addr, size_t size, int source) {
+    #if PAGING
+        if(mprotect(v_addr, size, PROT_NONE)  != 0) {
+            LogError("Mprotect failed");
+            exit(errno);
+        }
+        UpdateState(v_addr, RDMAMemory::State::Clean);
+    #endif
     uintptr_t conn_id = this->coordinator.connections[source];
     this->coordinator.getServer(source, conn_id)->send_close(conn_id, v_addr, size);
     this->deregister_memory(v_addr, size, source);
@@ -588,7 +595,7 @@ void MarkPageLocalCB(void* data) {
     (*x).fetch_sub(1);
 
     memory->pages.setPageState(address, PageState::Local);
-
+    free(data);
 }
 
 inline
@@ -689,13 +696,12 @@ int RDMAMemoryManager::PullPagesAsync(void* v_addr, size_t size, int source, int
     
     std::atomic<int64_t>* rate_limiter = (std::atomic<int64_t>*) malloc(sizeof(std::atomic<int64_t>));
 
-    vector<Page> p = memory->pages.pages;
-    size_t page_size = memory->pages->getPageSize();    
+    size_t page_size = memory->pages.getPageSize();    
     uintptr_t segment_pull = (uintptr_t)v_addr;
     uintptr_t end_segment_pull = (uintptr_t)v_addr + size;
 
     for (;segment_pull<end_segment_pull; segment_pull+=page_size) {
-        if(p.at(segment_pull).ps == PageState::Local) {
+        if(memory->pages.getPageState(segment_pull) == PageState::Local) {
             continue;
         }
         while (*rate_limiter > max_async_limit){}
@@ -730,6 +736,8 @@ int RDMAMemoryManager::PullPagesAsync(void* v_addr, size_t size, int source, int
         this->PullAsync(addr, pagesize, source, callback, data_);
     }
 
+    while((*rate_limiter) > 0);
+    free(rate_limiter);
     return 0;
 }
 
@@ -738,13 +746,12 @@ int RDMAMemoryManager::PullPagesSync(void* v_addr, size_t size, int source) {
     auto x = memory_map.find(v_addr);
     RDMAMemory* memory = x->second;
     
-    vector<Page> p = memory->pages.pages;
-    size_t page_size = memory->pages->getPageSize();    
+    size_t page_size = memory->pages.getPageSize();    
     uintptr_t segment_pull = (uintptr_t)v_addr;
     uintptr_t end_segment_pull = (uintptr_t)v_addr + size;
 
     for (;segment_pull<end_segment_pull; segment_pull+=page_size) {
-        if(p.at(segment_pull).ps == PageState::Local) {
+        if(memory->pages.getPageState(segment_pull) == PageState::Local) {
             continue;
         }
 

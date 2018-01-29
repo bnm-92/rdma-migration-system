@@ -44,6 +44,8 @@ int main(int argc, char* argv[]) {
         while(!map.PollForTransfer()) {}
 
         map.remote_instantiate();
+        map.PullAsync(10);
+
         map[3] = 4;
 
         std::cerr << "Contents: \n";

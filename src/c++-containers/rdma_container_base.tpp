@@ -12,10 +12,7 @@ RDMAContainerBase<T>::RDMAContainerBase(RDMAMemoryManager* manager) :
 
 template <class T>
 inline
-RDMAContainerBase<T>::~RDMAContainerBase() {
-    if (mempool != nullptr)
-        manager->deallocate(mempool->addr);
-}
+RDMAContainerBase<T>::~RDMAContainerBase() {}
 
 template <class T>
 inline
@@ -109,8 +106,8 @@ template <class T>
 inline
 void RDMAContainerBase<T>::Pull() {
     manager->Pull(
-        this->rdma_memory->v_addr, 
-        (size_t) ( (uintptr_t)this->mempool->unused_past - (uintptr_t)this->rdma_memory->v_addr),
+        this->rdma_memory->vaddr, 
+        (size_t) ( (uintptr_t)this->mempool->unused_past - (uintptr_t)this->rdma_memory->vaddr),
         this->rdma_memory->pair);
 }
 
@@ -118,8 +115,8 @@ template <class T>
 inline
 void RDMAContainerBase<T>::Push() {
     manager->Push(
-        this->rdma_memory->v_addr, 
-        (size_t) ( (uintptr_t)this->mempool->unused_past - (uintptr_t)this->rdma_memory->v_addr),
+        this->rdma_memory->vaddr, 
+        (size_t) ( (uintptr_t)this->mempool->unused_past - (uintptr_t)this->rdma_memory->vaddr),
         this->rdma_memory->pair);
 }
 
@@ -127,18 +124,25 @@ template <class T>
 inline
 void RDMAContainerBase<T>::PullSync() {
     manager->PullPagesSync(
-        this->rdma_memory->v_addr, 
-        (size_t) ( (uintptr_t)this->mempool->unused_past - (uintptr_t)this->rdma_memory->v_addr),
+        this->rdma_memory->vaddr, 
+        (size_t) ( (uintptr_t)this->mempool->unused_past - (uintptr_t)this->rdma_memory->vaddr),
         this->rdma_memory->pair);
 }
 
 template <class T>
 inline
-void RDMAContainerBase<T>::PullAsync() {
+void RDMAContainerBase<T>::PullAsync(int rate_limiter) {
     manager->PullPagesAsync(
-        this->rdma_memory->v_addr, 
-        (size_t) ( (uintptr_t)this->mempool->unused_past - (uintptr_t)this->rdma_memory->v_addr),
-        this->rdma_memory->pair);
+        this->rdma_memory->vaddr, 
+        (size_t) ( (uintptr_t)this->mempool->unused_past - (uintptr_t)this->rdma_memory->vaddr),
+        this->rdma_memory->pair,
+        rate_limiter);
+}
+
+template <class T>
+inline
+void RDMAContainerBase<T>::PullAndClose() {
+    manager->PullAllPages(this->rdma_memory);
 }
 
 template <class T>

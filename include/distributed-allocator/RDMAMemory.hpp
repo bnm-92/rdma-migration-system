@@ -90,23 +90,33 @@ public:
     */
     int PullPagesSync(void* v_addr, size_t size, int source);
 
-    //clean up, 
-    //TODO this should give you access to the entire memory 
-    //because the user has to ensure they have brought over all the memory required for closing the segment
+
+    /**
+     * Pull methods for bringing over the entire segment
+    */
+    void PullAllPagesWithoutCloseAsync(RDMAMemory* memory);
+    void PullAllPagesWithoutClose(RDMAMemory* memory);
+    void PullAllPages(RDMAMemory* memory);
+
+    /**
+     *  this should give you access to the entire memory 
+     *  because the user has to ensure they have brought over all the memory required for closing the segment
+     */
     void close(void* v_addr, size_t size, int source);
+    
+    /**
+     * Methods for detecting close
+    */
     RDMAMemory* PollForClose();
     RDMAMemory* PeekClose();
 
     void SetPageSize(void* address, size_t page_size);
 
-//TODO Make private or REMOVE
+    //TODO: REMOVE redundant/unused methods
 private:
     int PullAsync(void* v_addr, size_t size, int source, void (*callback)(void*), void* data);
 
     void MarkPageLocal(RDMAMemory* memory, void* address, size_t size);
-    void PullAllPagesWithoutCloseAsync(RDMAMemory* memory);
-    void PullAllPagesWithoutClose(RDMAMemory* memory);
-    void PullAllPages(RDMAMemory* memory);
 
     int pull(void* v_addr, int source);
     int push(void* v_addr, int destination);

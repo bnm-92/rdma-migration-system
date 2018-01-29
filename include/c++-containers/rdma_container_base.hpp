@@ -37,6 +37,31 @@ public:
     bool PollForClose();
     void Close();
 
+    /**
+     * Standard Pull/Push operations, may only be used when PAGING is set OFF in config (utils/mscutils.hpp)
+     * Pulls and pushes and entire container
+     * May also be used after close operation
+    */
+    void Pull();
+    void Push();
+
+    /**
+     * Standard Pulls with paging turned on
+     * PullSync will pull the entire container synchronously one page at a time
+     * PullAsync will pull the entire container asynchronously n pages at a time
+     * params:
+     * int rate_limiter: number of pending async ops allowed, a higher number will increase 
+     *                      latency of demand pulling as we only open one connection 
+    */
+    void PullSync();
+    void PullAsync(int rate_limiter);
+
+    /**
+     * If unsure whether all pages required have been imported (not to be used with containers, adding for completeness)
+     * Pulls the entire underlying memory segment and closes the connection on completion
+    */
+    void PullAndClose();
+
     /*
         Releases all the associated resources
     */
