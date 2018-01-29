@@ -15,7 +15,7 @@
 #include <cstddef>
 
 #define PAGING 1
-#define PREFETCHING 1
+#define PREFETCHING 0
 #define ASYNC_PREFETCHING 0
 #define ASCII_STARS "**********************************************************************"
 #define DEBUG 1

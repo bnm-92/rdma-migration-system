@@ -51,6 +51,7 @@ class Pages{
         PageState getPageState(void* address);
 
         void setPageSize(size_t page_size);
+        size_t getPageSize();
 
         vector<Page> pages;
         std::atomic<int> local_pages;

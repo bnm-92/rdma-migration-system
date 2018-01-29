@@ -102,12 +102,43 @@ bool RDMAContainerBase<T>::PollForClose() {
 template <class T>
 inline
 void RDMAContainerBase<T>::Close() {
-    #if PAGING
-        manager->PullAllPages(rdma_memory);
-    #else
-        manager->close(rdma_memory->vaddr, rdma_memory->size, rdma_memory->pair);
-    #endif
+    manager->close(rdma_memory->vaddr, rdma_memory->size, rdma_memory->pair);
+}
 
+template <class T>
+inline
+void RDMAContainerBase<T>::Pull() {
+    manager->Pull(
+        this->rdma_memory->v_addr, 
+        (size_t) ( (uintptr_t)this->mempool->unused_past - (uintptr_t)this->rdma_memory->v_addr),
+        this->rdma_memory->pair);
+}
+
+template <class T>
+inline
+void RDMAContainerBase<T>::Push() {
+    manager->Push(
+        this->rdma_memory->v_addr, 
+        (size_t) ( (uintptr_t)this->mempool->unused_past - (uintptr_t)this->rdma_memory->v_addr),
+        this->rdma_memory->pair);
+}
+
+template <class T>
+inline
+void RDMAContainerBase<T>::PullSync() {
+    manager->PullPagesSync(
+        this->rdma_memory->v_addr, 
+        (size_t) ( (uintptr_t)this->mempool->unused_past - (uintptr_t)this->rdma_memory->v_addr),
+        this->rdma_memory->pair);
+}
+
+template <class T>
+inline
+void RDMAContainerBase<T>::PullAsync() {
+    manager->PullPagesAsync(
+        this->rdma_memory->v_addr, 
+        (size_t) ( (uintptr_t)this->mempool->unused_past - (uintptr_t)this->rdma_memory->v_addr),
+        this->rdma_memory->pair);
 }
 
 template <class T>

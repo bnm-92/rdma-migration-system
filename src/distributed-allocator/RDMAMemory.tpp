@@ -31,7 +31,8 @@ RDMAMemoryManager::RDMAMemoryManager(std::string config, int serverid) :
     incoming_transfers(), 
     incoming_accepts(),
     incoming_dones(),
-    run(true)
+    run(true),
+    num_threads_pulling(0)
 {
     // LogAssert();
     this->server_id = serverid;
@@ -679,4 +680,86 @@ void RDMAMemoryManager::PullAllPages(RDMAMemory* memory){
     int source = memory->pair;
     this->UpdateState(memory->vaddr, RDMAMemory::State::Clean);
     this->close(memory->vaddr, memory->size, source);
+}
+
+inline
+int RDMAMemoryManager::PullPagesAsync(void* v_addr, size_t size, int source, int max_async_limit) {
+    auto x = memory_map.find(v_addr);
+    RDMAMemory* memory = x->second;
+    
+    std::atomic<int64_t>* rate_limiter = (std::atomic<int64_t>*) malloc(sizeof(std::atomic<int64_t>));
+
+    vector<Page> p = memory->pages.pages;
+    size_t page_size = memory->pages->getPageSize();    
+    uintptr_t segment_pull = (uintptr_t)v_addr;
+    uintptr_t end_segment_pull = (uintptr_t)v_addr + size;
+
+    for (;segment_pull<end_segment_pull; segment_pull+=page_size) {
+        if(p.at(segment_pull).ps == PageState::Local) {
+            continue;
+        }
+        while (*rate_limiter > max_async_limit){}
+
+        (*rate_limiter).fetch_add(1);
+
+        void* addr = memory->pages.getPageAddress((void*)segment_pull);
+        size_t pagesize = memory->pages.getPageSize((void*)segment_pull);
+
+        if(!memory->pages.setPageStateCAS(addr, PageState::Remote, PageState::InFlight)) {
+            //page was not set to remote, so its either a inflight or local
+            //either way, we do not need to do any operations, just continue
+            continue;
+        }
+
+        void* data_ = (void*)malloc(sizeof(RDMAMemory*) + sizeof(void*) + sizeof(size_t) + sizeof(std::atomic<int64_t>*));
+        void* data = data_;
+
+        *((void**)data) = (void*)memory;
+        data = (void*)((char*)data + sizeof(RDMAMemory*));
+
+        *((void**)data) = addr;
+        data = (void*)((char*)data + sizeof(void*));
+        memcpy(data, &pagesize, sizeof(pagesize));
+        
+        data = (void*)((char*)data + sizeof(pagesize));
+        
+        *((void**)data) = (void*)rate_limiter;
+
+        void(*callback)(void*);
+        callback = MarkPageLocalCB;
+        this->PullAsync(addr, pagesize, source, callback, data_);
+    }
+
+    return 0;
+}
+
+inline
+int RDMAMemoryManager::PullPagesSync(void* v_addr, size_t size, int source) {
+    auto x = memory_map.find(v_addr);
+    RDMAMemory* memory = x->second;
+    
+    vector<Page> p = memory->pages.pages;
+    size_t page_size = memory->pages->getPageSize();    
+    uintptr_t segment_pull = (uintptr_t)v_addr;
+    uintptr_t end_segment_pull = (uintptr_t)v_addr + size;
+
+    for (;segment_pull<end_segment_pull; segment_pull+=page_size) {
+        if(p.at(segment_pull).ps == PageState::Local) {
+            continue;
+        }
+
+        void* addr = memory->pages.getPageAddress((void*)segment_pull);
+        size_t pagesize = memory->pages.getPageSize((void*)segment_pull);
+
+        if(!memory->pages.setPageStateCAS(addr, PageState::Remote, PageState::InFlight)) {
+            //page was not set to remote, so its either a inflight or local
+            //either way, we do not need to do any operations, just continue
+            continue;
+        }
+
+        this->Pull(addr, pagesize, source);
+        this->MarkPageLocal(memory, addr, pagesize);
+    }
+    
+    return 0;
 }

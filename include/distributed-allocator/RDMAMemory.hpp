@@ -75,19 +75,38 @@ public:
     int Pull(void* v_addr, size_t size, int source);
     int Push(void* v_addr, size_t size, int source);
 
-    //clean up
+    /**
+     * detaches a thread for pulling in pages from adress to size provided
+     * rate limiting at number of pages,
+    */
+
+    int PullPagesAsync(void* v_addr, size_t size, int source, int rate_limiter);
+    
+    /**
+     * detaches a thread for pulling in pages starting at the address to size provided
+     * syncs at every pull
+     * ie it will pull in one page at a time with the rate limitation of one page 
+     * and then finish the thread
+    */
+    int PullPagesSync(void* v_addr, size_t size, int source);
+
+    //clean up, 
+    //TODO this should give you access to the entire memory 
+    //because the user has to ensure they have brought over all the memory required for closing the segment
     void close(void* v_addr, size_t size, int source);
     RDMAMemory* PollForClose();
     RDMAMemory* PeekClose();
 
     void SetPageSize(void* address, size_t page_size);
+
+//TODO Make private or REMOVE
+private:
+    int PullAsync(void* v_addr, size_t size, int source, void (*callback)(void*), void* data);
+
     void MarkPageLocal(RDMAMemory* memory, void* address, size_t size);
     void PullAllPagesWithoutCloseAsync(RDMAMemory* memory);
     void PullAllPagesWithoutClose(RDMAMemory* memory);
     void PullAllPages(RDMAMemory* memory);
-//TODO Make private or REMOVE
-private:
-    int PullAsync(void* v_addr, size_t size, int source, void (*callback)(void*), void* data);
 
     int pull(void* v_addr, int source);
     int push(void* v_addr, int destination);
@@ -165,6 +184,8 @@ private:
     ThreadsafeQueue<RDMAMemory*> incoming_accepts;
     ThreadsafeQueue<RDMAMemory*> incoming_dones;
     volatile bool run;
+
+    std::atomic<int> num_threads_pulling;
 };
 
 #include "RDMAMemory.tpp"
@@ -217,4 +238,4 @@ static void initialize() {
     sigaction(SIGSEGV, &act, NULL);
 }
 #endif //PAGING
-#endif //RDMAMemory
+#endif //RDMAMemoryfire

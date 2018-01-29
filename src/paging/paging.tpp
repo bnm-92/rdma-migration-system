@@ -42,6 +42,11 @@ size_t Pages::getPageSize(void* address) {
 }
 
 inline
+size_t Pages::getPageSize() {
+    return page_size;
+}
+
+inline
 void Pages::setPageState(int page_id, PageState state){
     pages.at(page_id).ps.store(state);
     if(state == PageState::Local)
