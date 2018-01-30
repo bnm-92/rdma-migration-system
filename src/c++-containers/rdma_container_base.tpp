@@ -151,3 +151,10 @@ void RDMAContainerBase<T>::SetContainerSize(size_t size) {
     if(mempool == nullptr)
         this->DEFAULT_POOL_SIZE = size;
 }
+
+template <class T>
+inline
+void RDMAContainerBase<T>::SetPageSize(size_t size) {
+    if(rdma_memory != nullptr)
+        this->rdma_memory->pages->setPageSize(size);
+}

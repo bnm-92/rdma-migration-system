@@ -73,6 +73,11 @@ public:
     */
     void SetContainerSize(size_t size);
 
+    /*
+        set page size for this container
+    */
+    void SetPageSize(size_t size);
+
 protected:
     /*
         Manager for cluster memory
