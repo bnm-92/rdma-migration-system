@@ -1,5 +1,52 @@
 #include <iostream>
+#include <map>
 #include <zookeeper/zookeeper.hpp>
+
+
+std::map<std::string, std::string> ZStoMAP(std::string input) {
+    int len = input.size();
+    int start = 0;
+    int end = 0;
+    std::map<std::string, std::string> res;
+    int i = 0;
+    while(i < len) {
+        //find a key
+        std::string key;
+        start = i;
+        while(input.at(i) != ',') {
+            i++;
+        }
+        end = i;
+
+        key = input.substr(start, end - start);
+
+        //find the value
+        i++;
+        std::string val;
+        start = i;
+        while(input.at(i) != ',') {
+            i++;
+        }
+        end = i;
+
+        val = input.substr(start, end - start);
+
+        //add to map
+        res[key] = val;
+    }
+    return res;
+}
+
+std::string MAPtoZS(std::map<std::string, std::string> map) {
+    std::string res;
+    for(auto it = map.begin(); it != map.end(); it++) {
+        res.append(it.first.c_str());
+        res.append(",");
+        res.append(it.second.c_str());
+        res.append(",");
+    }
+    return res;
+}
 
 int main(int argc, char** argv) {
     ZooKeeper zk("127.0.0.1:2181", 1000, nullptr);
