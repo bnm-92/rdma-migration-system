@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -g -std=c++11 -MMD -Wall -lrdmacm -libverbs -lpthread -I../../include/  -I../../src/ 
+CXXFLAGS = -g -std=c++11 -MMD -Wall -lrdmacm -libverbs -lpthread -lzookeeper_mt -I../../include/  -I../../src/ 
 # -std=c++11: Compile with the C++11 standard.
 # -MMD: Autogenerate dependency files (.d).
 EXEC = exec
