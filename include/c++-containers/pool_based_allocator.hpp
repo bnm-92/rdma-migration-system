@@ -30,7 +30,7 @@ For more information, see http://en.cppreference.com/w/cpp/concept/Allocator
 #include <iostream>
 #include <limits>
 
-#include "mempool.hpp"
+#include "distributed-allocator/mempool.hpp"
 
 // This allocator was started with boilerplate code from:
 // https://howardhinnant.github.io/allocator_boilerplate.html

@@ -4,9 +4,9 @@
 #include <iostream>
 #include <string>
 
-#include "mempool.hpp"
-#include "rdma_vector.hpp"
-#include "rdma_unordered_map.hpp"
+#include "distributed-allocator/mempool.hpp"
+#include "c++-containers/rdma_vector.hpp"
+#include "c++-containers/rdma_unordered_map.hpp"
 
 // This only works with containers that take exactly two template arguments
 // e.g. not map, set, etc.

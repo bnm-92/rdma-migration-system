@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -g -std=c++11 -MMD -Wall -lrdmacm -libverbs -lpthread -I../../include/utils -I../../include/rdma-network -I../../src/rdma-network -I../../include/distributed-allocator -I../../src/distributed-allocator -I../../include/c++-containers -I../../src/c++-containers -I../../include/paging -I../../src/paging 
+CXXFLAGS = -g -std=c++11 -MMD -Wall -lrdmacm -libverbs -lpthread -I../../include/  -I../../src/ 
 # -std=c++11: Compile with the C++11 standard.
 # -MMD: Autogenerate dependency files (.d).
 EXEC = exec

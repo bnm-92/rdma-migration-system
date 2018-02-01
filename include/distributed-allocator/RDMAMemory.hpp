@@ -6,9 +6,9 @@
 #include <stdlib.h>
 #include <vector>
 
-#include "miscutils.hpp"
-#include "RDMAMemNode.hpp"
-#include "paging.hpp"
+#include "utils/miscutils.hpp"
+#include "distributed-allocator/RDMAMemNode.hpp"
+#include "paging/paging.hpp"
 
 /*
     This is the basic unit of RDMAable memory that can be called by the application 
@@ -198,7 +198,7 @@ private:
     std::atomic<int> num_threads_pulling;
 };
 
-#include "RDMAMemory.tpp"
+#include "distributed-allocator/RDMAMemory.tpp"
 #if PAGING
 static RDMAMemoryManager* manager = nullptr;
 static struct sigaction act;

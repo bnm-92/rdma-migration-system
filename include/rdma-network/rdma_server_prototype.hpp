@@ -9,9 +9,9 @@
 #include <thread>
 #include <unordered_set>
 #include <utility>
-#include "miscutils.hpp"
+#include "utils/miscutils.hpp"
 
-#include "util.hpp"
+#include "rdma-network/util.hpp"
 
 /*
 This file contains definitions and code for the RDMA communication interface
@@ -430,6 +430,6 @@ struct rdma_message {
     size_t data_size;
 };
 
-#include "rdma_server_prototype.tpp"
+#include "rdma-network/rdma_server_prototype.tpp"
 
 #endif // __RDMA_SERVER_PROTOTYPE_HPP__

@@ -8,7 +8,7 @@
 */
 
 #include <unordered_set>
-#include "miscutils.hpp"
+#include "utils/miscutils.hpp"
 
 class MemoryPool {
 public:
@@ -54,6 +54,6 @@ public:
     size_t size;
 };
 
-#include "mempool.tpp"
+#include "distributed-allocator/mempool.tpp"
 
 #endif // __MEMPOOL_HPP__

@@ -72,15 +72,21 @@ int ZooKeeper::create(
     const ACL_vector& acl,
     int flags,
     std::string* result) {
-    /*
-        add a buffer to support sequential nodes
-    */
-    return zoo_create(this->zh, path.c_str(), data.data(),
+
+    int buflen = BUFLEN;
+    result = new std::string(buflen, '\0');
+    
+    int rc =  zoo_create(this->zh, path.c_str(), data.data(),
         static_cast<int>(data.size()),
         &acl,
         flags,
-        NULL, 
-        0);
+        &(*result)[0], 
+        buflen);
+
+    if(buflen != -1)
+        result->resize(strlen(result->c_str()));
+    
+    return rc;
 }
 
 int ZooKeeper::remove(const std::string& path, int version) {

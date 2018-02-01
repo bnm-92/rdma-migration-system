@@ -4,9 +4,9 @@
 #include <vector>
 #include <utility>
 
-#include "rdma_server_prototype.hpp"
-#include "mempool.hpp"
-#include "rdma_container_base.hpp"
+#include "rdma-network/rdma_server_prototype.hpp"
+#include "distributed-allocator/mempool.hpp"
+#include "c++-containers/rdma_container_base.hpp"
 
 template <class T>
 class RDMAVector : public RDMAContainerBase<T> {

@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "util.hpp"
+#include "rdma-network/util.hpp"
 
 inline
 RDMAServer::RDMAServer() : RDMAServerPrototype() {

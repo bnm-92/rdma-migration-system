@@ -3,12 +3,12 @@
 
 #include <scoped_allocator>
 
-#include "rdma_server_prototype.hpp"
+#include "rdma-network/rdma_server_prototype.hpp"
 
-#include "pool_based_allocator.hpp"
-#include "mempool.hpp"
+#include "c++-containers/pool_based_allocator.hpp"
+#include "distributed-allocator/mempool.hpp"
 
-#include "RDMAMemory.hpp"
+#include "distributed-allocator/RDMAMemory.hpp"
 
 // static RDMAMemoryManager* memory_manager; 
 
@@ -117,5 +117,5 @@ protected:
     virtual void set_container_address(void* container_addr) = 0;
 };
 
-#include "rdma_container_base.tpp"
+#include "c++-containers/rdma_container_base.tpp"
 #endif // __RDMA_CONTAINER_BASE_HPP__

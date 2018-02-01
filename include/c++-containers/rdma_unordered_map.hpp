@@ -6,11 +6,11 @@
 #include <unordered_map>
 #include <utility>
 
-#include "rdma_server_prototype.hpp"
+#include "rdma-network/rdma_server_prototype.hpp"
 
-#include "mempool.hpp"
-#include "rdma_container_base.hpp"
-#include "miscutils.hpp"
+#include "distributed-allocator/mempool.hpp"
+#include "c++-containers/rdma_container_base.hpp"
+#include "utils/miscutils.hpp"
 
 template <
     class Key,

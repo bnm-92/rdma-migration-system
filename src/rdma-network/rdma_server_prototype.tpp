@@ -5,8 +5,8 @@
 #include <iostream>
 #include <string>
 
-#include "util.hpp"
-#include "rdma_server_prototype.hpp"
+#include "rdma-network/util.hpp"
+#include "rdma-network/rdma_server_prototype.hpp"
 #include <sys/mman.h>
 
 inline

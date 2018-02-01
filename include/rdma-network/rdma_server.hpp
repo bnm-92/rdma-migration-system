@@ -7,8 +7,8 @@
 
 #include <unordered_set>
 
-#include "rdma_server_prototype.hpp"
-#include "util.hpp"
+#include "rdma-network/rdma_server_prototype.hpp"
+#include "rdma-network/util.hpp"
 
 class RDMAServer : public RDMAServerPrototype {
 /*
@@ -72,6 +72,6 @@ private:
     sem_t conn_queue_sem;
 };
 
-#include "rdma_server.tpp"
+#include "rdma-network/rdma_server.tpp"
 
 #endif // __RDMA_SERVER_HPP__

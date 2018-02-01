@@ -15,7 +15,7 @@
 #include <semaphore.h>
 #include <thread>
 
-#include "rdma_server_prototype.hpp"
+#include "rdma-network/rdma_server_prototype.hpp"
 
 // A class for making outgoing RDMA connections. Encapsulates a client RDMA
 // socket and all resources associated with it.
@@ -64,6 +64,6 @@ public:
     static const int TIMEOUT_MS = 500;
 };
 
-#include "rdma_client.tpp"
+#include "rdma-network/rdma_client.tpp"
 
 #endif // __RDMA_CLIENT_HPP__

@@ -5,9 +5,9 @@
 #include <cstring>
 #include <iostream>
 
-#include "util.hpp"
-#include "rdma_server_prototype.hpp"
-#include "rdma_client.hpp"
+#include "rdma-network/util.hpp"
+#include "rdma-network/rdma_server_prototype.hpp"
+#include "rdma-network/rdma_client.hpp"
 
 inline
 RDMAClient::RDMAClient()

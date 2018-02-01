@@ -13,12 +13,19 @@
 #include <unordered_map>
 #include <assert.h> 
 #include <cstddef>
+#include <map>
 
 
 /**
  * enables demand paging and sets up pages and sigsegv handler
 */
 #define PAGING 1
+
+/**
+ * enable fault tolerance
+*/
+#define FAULT_TOLERANT 0
+
 
 /**
  * allows automatic prefetching of the entire memory segment on a new thread
@@ -233,7 +240,13 @@ class ConfigParser{
 
 public:
     ConfigParser() : path(""), num_servers(0) {}
-    ~ConfigParser(){};
+    ~ConfigParser(){
+        #if FAULT_TOLERANT
+            if(zk_errorfile != nullptr) {
+                fclose(zk_errorfile);
+            }
+        #endif
+    }
 
     RNode* getNode(int id) {
         return this->map.at(id);
@@ -247,14 +260,6 @@ public:
         try {
             if(!is_stream)
                 LogError("file error");
-
-            // if(!std::getline(is_stream, line))
-            //     LogError("file error");
-
-            
-            /*
-                can potentially add user inputted addresses as values for start_address and end_address
-            */
 
             num_servers = 0;
             if(std::getline(is_stream, line)) {
@@ -296,6 +301,37 @@ public:
                     LogError("Could not find expected server information for server %d", i);
                 }
             }
+            #if FAULT_TOLERANT
+            // lets take zookeeper parameters, zookeeperserverlist,heartbeats_timeout,logFile
+            if(std::getline(is_stream, line)) {
+                std::stringstream stm(line);
+                char delim = ',';
+                std::string token;
+
+                if(!std::getline(stm, token, delim))
+                    LogError("delim error");
+                
+                this->zookeeper_servers = token;
+
+                if(!std::getline(stm, token, delim))
+                    LogError("delim error");
+                
+                this->heartbeat = atoi(token.c_str());
+
+                if(!std::getline(stm, token, delim))
+                    LogError("delim error");
+                
+                // if(token == "null") {
+                //     this->zk_errorfile = nullptr;
+                // } else {
+                //     this->zk_errorfile = fopen(token.c_str(), "w");
+                // }
+
+                this->zk_errorfile = token == "null"? nullptr : fopen(token.c_str(), "w");
+            }
+
+            #endif
+             
 
             is_stream.close();
 
@@ -317,10 +353,30 @@ public:
         return end_address;
     }
 
+    #if FAULT_TOLERANT
+    std::string getZKServerList() {
+        return zookeeper_servers;
+    }
+
+    int getZKHeartbeatTimeout() {
+        return heartbeat;
+    }
+
+    FILE* getZKLogFileHandle() {
+        return zk_errorfile;
+    }
+    
+    #endif
+
 private:
     std::string path;
     int num_servers;
     std::unordered_map<int, RNode*> map;
+
+    std::string zookeeper_servers;
+    int heartbeat; // in milliseconds
+    FILE *zk_errorfile;
+
     /*
         region of address that is shared
     */
@@ -330,4 +386,52 @@ private:
 
 };
 
+#if FAULT_TOLERANT
+
+std::map<std::string, std::string> ZStoMAP(std::string input) {
+    int len = input.size();
+    int start = 0;
+    int end = 0;
+    std::map<std::string, std::string> res;
+    int i = 0;
+    while(i < len) {
+        //find a key
+        std::string key;
+        start = i;
+        while(input.at(i) != ',') {
+            i++;
+        }
+        end = i;
+
+        key = input.substr(start, end - start);
+        i++;
+
+        //find the value
+        std::string val;
+        start = i;
+        while(input.at(i) != ',') {
+            i++;
+        }
+        end = i;
+        val = input.substr(start, end - start);
+        i++;
+
+        //add to map
+        res[key] = val;
+    }
+    return res;
+}
+
+std::string MAPtoZS(std::map<std::string, std::string> map) {
+    std::string res;
+    for(auto it = map.begin(); it != map.end(); it++) {
+        res.append(it->first.c_str());
+        res.append(",");
+        res.append(it->second.c_str());
+        res.append(",");
+    }
+    return res;
+}
+
+#endif //FAULT_TOLERANT
 #endif // __MISCUTILS_HPP__

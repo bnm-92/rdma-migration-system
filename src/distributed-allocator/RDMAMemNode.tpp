@@ -1,13 +1,49 @@
 
 inline
 RDMAMemNode::RDMAMemNode(std::string config_path, int server_id): 
-cfg(), server(nullptr) {
+cfg(), server(nullptr), zk(nullptr) {
     //initialize vars
     this->server_id = server_id;
     server = new RDMAServer();
     
     //parse config
     cfg.parse(config_path);
+    //connect with zookeeper
+    #if FAULT_TOLERANT
+    zk = new ZooKeeper(cfg.getZKServerList, cfg.getZKHeartbeatTimeout, cfg.getZKLogFileHandle);
+    
+    // lets create basic zookeeper paths
+    std::string *result;
+    Stat stat;
+
+    std::string memory_segment_node = "/memory_segments";
+    if(zk->exists(memory_segment_node, &stat) == ZNONODE) {
+        int rc = zk->create(memory_segment_node, "", ZOO_OPEN_ACL_UNSAFE, 0, result);
+        if(rc != ZOK || rc != ZNODEEXISTS) {
+            LogError("Could not create %s in zookeeper", memory_segment_node);
+        }
+    }
+    free(result);
+
+    std::string process_node = "/process";
+    if(zk->exists(process_node, &stat) == ZNONODE) {
+        int rc = zk->create(process_node, "", ZOO_OPEN_ACL_UNSAFE, 0, result);
+        if(rc != ZOK || rc != ZNODEEXISTS) {
+            LogError("Could not create %s in zookeeper", process_node);
+        }
+    }
+    free(result);
+
+    std::string allocator_node = "/allocator";
+    if(zk->exists(allocator_node, &stat) == ZNONODE) {
+        int rc = zk->create(allocator_node, "", ZOO_OPEN_ACL_UNSAFE, 0, result);
+        if(rc != ZOK || rc != ZNODEEXISTS) {
+            LogError("Could not create %s in zookeeper", allocator_node);
+        }
+    }
+    free(result);
+
+    #endif
     // starting server
     server->start(cfg.getNode(this->server_id)->port);
 

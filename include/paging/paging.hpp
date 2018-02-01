@@ -9,7 +9,7 @@
 #include <cstring>
 #include <atomic>
 
-#include "RDMAMemory.hpp"
+#include "distributed-allocator/RDMAMemory.hpp"
 
 using namespace std;
 
@@ -64,6 +64,6 @@ class Pages{
         size_t page_size;
 };
 
-#include <paging.tpp>
+#include <paging/paging.tpp>
 
 #endif //__PAGING_HPP
