@@ -24,7 +24,7 @@
 /**
  * enable fault tolerance
 */
-#define FAULT_TOLERANT 0
+#define FAULT_TOLERANT 1
 
 
 /**
@@ -54,6 +54,11 @@
 */
 
 static int max_async_pending = 40;
+
+/**
+ * For fault tolerance branch, we are using ALLOCATABLE_RANGE_START
+ * as a starting point for zookeeper, each allocation will go read this and increment it
+*/
 
 static const ptrdiff_t TOP_BOTTOM_MARGIN = \
 // This is 2^44, or 0x 1000 0000 0000, or about 16 TiB of space.
@@ -428,6 +433,37 @@ std::string MAPtoZS(std::map<std::string, std::string> map) {
         res.append(it->first.c_str());
         res.append(",");
         res.append(it->second.c_str());
+        res.append(",");
+    }
+    return res;
+}
+
+std::vector<int64_t> ZStoProcessList(std::string str) {
+    std::vector<int64_t> res;
+    int start = 0;
+    int end = 0;
+    int i = 0;
+    int len = str.size();
+
+    while( i < len) {
+        std::string id;
+        start = i;
+        while(str.at(i) != ',') {
+            i++;
+        }
+        end = i;
+        i++;
+        id = str.substr(start, end - start);
+        res.push_back(atol(id.c_str()));
+    }
+
+    return res;
+}
+
+std::string ProcessListtoZS(std::vector<int64_t> vec) {
+    std::string res;
+    for(auto it = vec.begin(); it != vec.end(); it++) {
+        res.append(std::to_string(*it));
         res.append(",");
     }
     return res;

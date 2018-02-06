@@ -19,21 +19,27 @@ class RDMAMemory{
 public:
     RDMAMemory(int owner, void* addr, size_t size);
     RDMAMemory(int owner, void* addr, size_t size, size_t page_size);
+    #if FAULT_TOLERANT
+        RDMAMemory(int owner, void* addr, size_t size, int64_t app_id);
+        RDMAMemory(int owner, void* addr, size_t size, size_t page_size, int64_t app_id);
+    #endif
     ~RDMAMemory();
-    
-    enum class State {
-        Dirty,
-        Invalid,
-        Shared,
-        Clean,
-        Owned,
+    enum class State {         
+        Dirty,         
+        Invalid,         
+        Shared,         
+        Clean,         
+        Owned,     
     };
-
     void* vaddr;
     size_t size;
     int owner;
     State state;
     int pair;
+
+    #if FAULT_TOLERANT
+        int64_t application_id;
+    #endif
 
     Pages pages;
 };
@@ -58,16 +64,18 @@ public:
     
 public:
     RDMAMemory* getRDMAMemory(void* address);
-
-    void* allocate(void* v_addr, size_t size);
+    #if FAULT_TOLERANT
+    void* allocate(size_t size, int64_t id);
+    int deallocate(int64_t application_id);
+    #else
     void* allocate(size_t size);
     void deallocate(void* v_addr);
-    void deallocate(void* v_addr, size_t size);
+    #endif
+    
 
     // sending routines
     int Prepare(void* v_addr, size_t size, int destination);
     RDMAMemory* PollForAccept();
-    RDMAMemory* PeekAccept();
     int Transfer(void* v_addr, size_t size, int destination);
 
     //receiving routines
@@ -76,6 +84,22 @@ public:
     int Push(void* v_addr, size_t size, int source);
 
     /**
+     *  this should give you access to the entire memory 
+     *  because the user has to ensure they have brought over all the memory required for closing the segment
+     */
+    void close(void* v_addr, size_t size, int source);
+    
+    void SetPageSize(void* address, size_t page_size);
+
+    #if FAULT_TOLERANT
+        void* allocate(void* v_addr, size_t size, int64_t applicaiton_id);
+    #else 
+        void* allocate(void* v_addr, size_t size);
+    #endif
+    
+    RDMAMemory* PeekAccept();
+
+        /**
      * detaches a thread for pulling in pages from adress to size provided
      * rate limiting at number of pages,
     */
@@ -99,25 +123,16 @@ public:
     void PullAllPages(RDMAMemory* memory);
 
     /**
-     *  this should give you access to the entire memory 
-     *  because the user has to ensure they have brought over all the memory required for closing the segment
-     */
-    void close(void* v_addr, size_t size, int source);
-    
-    /**
      * Methods for detecting close
     */
     RDMAMemory* PollForClose();
     RDMAMemory* PeekClose();
 
-    void SetPageSize(void* address, size_t page_size);
 
-    //TODO: REMOVE redundant/unused methods
-private:
     int PullAsync(void* v_addr, size_t size, int source, void (*callback)(void*), void* data);
 
     void MarkPageLocal(RDMAMemory* memory, void* address, size_t size);
-
+private:
     int pull(void* v_addr, int source);
     int push(void* v_addr, int destination);
     int pull(void* v_addr, size_t size);
@@ -127,6 +142,7 @@ private:
 
     int prepare(void* v_addr, int destination);
     void* accept(void* v_addr, size_t size, int source);
+    void* accept(void* v_addr, size_t size, int source, int64_t client_id);
     int transfer(void* v_addr, size_t size, int destination);
     void on_transfer(void* v_addr, size_t size, int source);
 
@@ -146,16 +162,21 @@ private:
             DECLINE,
             TRANSFER,
             DONE,
+            GETPARTITIONS,
+            SENTPARTITIONS,
+            USER,
         } type;
 
         void* addr;
         size_t size;
         void* container_address;
         size_t used;
-        RDMAMessage(void* addr, size_t size, Type type) {
+        char* data;
+        RDMAMessage(void* addr, size_t size, Type type, char* data) {
             this->addr = addr;
             this->size = size;
             this->type = type;
+            this->data = data;
         }
 
         RDMAMessage(void* addr, size_t size, Type type, void* container_address, size_t used) {
@@ -186,6 +207,9 @@ private:
     std::unordered_map<void*, RDMAMemory*> memory_map;
     //free list
     std::unordered_map<size_t, std::vector<RDMAMemory*>> free_map;
+    #if FAULT_TOLERANT
+    std::unordered_map<void*, RDMAMemory*> local_segments;
+    #endif
 
     //thread for polling the queue
     std::thread poller_thread;
@@ -195,7 +219,7 @@ private:
     ThreadsafeQueue<RDMAMemory*> incoming_dones;
     volatile bool run;
 
-    std::atomic<int> num_threads_pulling;
+    std::atomic<int> num_threads_pulling;                
 };
 
 #include "distributed-allocator/RDMAMemory.tpp"

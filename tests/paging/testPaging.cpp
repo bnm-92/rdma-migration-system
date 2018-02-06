@@ -4,10 +4,10 @@
 #include <iostream>
 #include <string>
 
-#include "mempool.hpp"
-#include "rdma_vector.hpp"
-#include "rdma_unordered_map.hpp"
-#include "paging.hpp"
+#include "distributed-allocator/mempool.hpp"
+#include "c++-containers/rdma_vector.hpp"
+#include "c++-containers/rdma_unordered_map.hpp"
+#include "paging/paging.hpp"
 
 int main(int argc, char* argv[]) {
     if (argc < 3) {

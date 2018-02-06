@@ -90,8 +90,17 @@ bool RDMAContainerBase<T>::PollForClose() {
     RDMAMemory* r_memory = manager->PeekClose();
     if(r_memory == NULL)
         return false;
-    if(r_memory->vaddr == mempool->addr)
-        rdma_memory = manager->PollForClose();        
+    if(r_memory->vaddr == mempool->addr) {
+        rdma_memory = manager->PollForClose();
+        #if FAULT_TOLERANT
+            manager->deallocate(rdma_memory->application_id);
+        #else 
+            manager->deallocate(rdma_memory->vaddr);
+        #endif
+    } else {
+        return false;
+    }
+    
     return true;
     
 }

@@ -1,4 +1,4 @@
-#include "RDMAMemory.hpp"
+#include "distributed-allocator/RDMAMemory.hpp"
 
 int main(int argc, char** argv) {
     if (argc < 3) {
@@ -7,7 +7,7 @@ int main(int argc, char** argv) {
     }
     int server_id = atoi(argv[2]);
     RDMAMemoryManager manager(argv[1], server_id);
-
+    initialize();
     /*
         this files simply tests the transfer ownership of a memory region
     */

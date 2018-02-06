@@ -8,9 +8,9 @@ Connects to a test-server and RDMA reads a message from their memory.
 #include <iostream>
 #include <string>
 
-#include "miscutils.hpp"
+#include "utils/miscutils.hpp"
 
-#include "rdma_client.hpp"
+#include "rdma-network/rdma_client.hpp"
 
 int main (int argc, char** argv) {
     if (argc != 2) {

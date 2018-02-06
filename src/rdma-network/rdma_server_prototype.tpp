@@ -129,6 +129,63 @@ void RDMAServerPrototype::send_prepare(
     LogInfo("RDMAServerPrototype::send prepare message to client");
 }
 
+#if FAULT_TOLERANT
+inline
+void RDMAServerPrototype::send_prepare(uintptr_t conn_id, 
+    void* start_addr, size_t len, char* client_id, size_t client_id_size) {
+    std::lock_guard<std::mutex> guard(user_mutex);
+    struct rdma_connection* conn = (struct rdma_connection*)conn_id;
+
+    // skipping length check since only sending a message of standard size
+    // Package up the message into an rdma_message.
+    struct rdma_message rdma_msg;
+    memset(&rdma_msg, 0, sizeof(rdma_msg));
+    rdma_msg.message_type = rdma_message::MessageType::MSG_PREPARE;
+    rdma_msg.region_info.addr = start_addr;
+    rdma_msg.region_info.length = len;
+    rdma_msg.region_info.rkey = conn->registrations[start_addr]->rkey;
+    memcpy(rdma_msg.data, client_id, client_id_size);
+    rdma_msg.data_size = client_id_size;
+
+    // Send the message.
+    post_rdma_send(conn, &rdma_msg, NULL);
+
+    LogInfo("RDMAServerPrototype::send prepare message to client");
+}
+
+
+void RDMAServerPrototype::getPartitionList(uintptr_t conn_id) {
+    std::lock_guard<std::mutex> guard(user_mutex);
+    struct rdma_connection* conn = (struct rdma_connection*)conn_id;
+
+    struct rdma_message rdma_msg;
+    memset(&rdma_msg, 0, sizeof(rdma_msg));
+    rdma_msg.message_type = rdma_message::MessageType::MSG_GET_PARTITIONS;
+    // Send the message.
+    post_rdma_send(conn, &rdma_msg, NULL);
+
+    LogInfo("RDMAServerPrototype::send get partition list message to pair");
+}
+
+void RDMAServerPrototype::sendPartitionList(uintptr_t conn_id, std::string str) {
+    std::lock_guard<std::mutex> guard(user_mutex);
+    struct rdma_connection* conn = (struct rdma_connection*)conn_id;
+
+    struct rdma_message rdma_msg;
+    memset(&rdma_msg, 0, sizeof(rdma_msg));
+    rdma_msg.message_type = rdma_message::MessageType::MSG_SENT_PARTITIONS;
+    LogAssert(str.size() <= rdma_message::MAX_DATA_SIZE, "max size exceeding");
+    std::copy(str.begin(), str.end(), rdma_msg.data);
+    rdma_msg.data[str.size()] = '\0';
+    rdma_msg.data_size = str.size();
+    // Send the message.
+    post_rdma_send(conn, &rdma_msg, NULL);
+
+    LogInfo("RDMAServerPrototype::send get partition list message to pair");
+}
+
+#endif
+
 inline
 void RDMAServerPrototype::send_decline(
     uintptr_t conn_id, void* start_addr, size_t len) {
@@ -162,7 +219,7 @@ void RDMAServerPrototype::send_accept(
     rdma_msg.message_type = rdma_message::MessageType::MSG_ACCEPT;
     rdma_msg.region_info.addr = start_addr;
     rdma_msg.region_info.length = len;
-    rdma_msg.data_size = sizeof(rdma_message);
+    rdma_msg.data_size = 0;
 
     // Send the message.
     post_rdma_send(conn, &rdma_msg, NULL);
@@ -794,6 +851,22 @@ void RDMAServerPrototype::on_recv_finish(struct ibv_wc* wc) {
         memcpy(msg_for_user, msg, sizeof(struct rdma_message));
         conn->recv_queue.enqueue(
             std::pair<void*, size_t>((void*)msg_for_user, sizeof(struct rdma_message)));
+    } else if(msg->message_type == msg->MessageType::MSG_GET_PARTITIONS) {
+        
+        post_rdma_receive(conn);
+        struct rdma_message* msg_for_user = (struct rdma_message*)malloc(sizeof(struct rdma_message));
+        memcpy(msg_for_user, msg, sizeof(struct rdma_message));
+        conn->recv_queue.enqueue(
+            std::pair<void*, size_t>((void*)msg_for_user, sizeof(struct rdma_message)));
+
+    } else if(msg->message_type == msg->MessageType::MSG_SENT_PARTITIONS) {
+        
+        post_rdma_receive(conn);
+        struct rdma_message* msg_for_user = (struct rdma_message*)malloc(sizeof(struct rdma_message));
+        memcpy(msg_for_user, msg, sizeof(struct rdma_message));
+        conn->recv_queue.enqueue(
+            std::pair<void*, size_t>((void*)msg_for_user, sizeof(struct rdma_message)));
+
     } else {
         throw std::runtime_error("Invalid enum for MessageType!");
     }
@@ -835,6 +908,10 @@ void RDMAServerPrototype::on_send_finish(struct ibv_wc* wc) {
         LogInfo("completed send on transfer");
     } else if (msg->message_type == msg->MessageType::MSG_DONE_TRANSFER){
         LogInfo("completed send on done");
+    } else if (msg->message_type == msg->MessageType::MSG_GET_PARTITIONS){
+        LogInfo("completed send on MSG_GET_PARTITIONS");
+    } else if (msg->message_type == msg->MessageType::MSG_SENT_PARTITIONS){
+        LogInfo("completed send on MSG_SENT_PARTITIONS");
     } else {
         throw std::runtime_error("Invalid enum for MessageType on_send_finish!");
     }

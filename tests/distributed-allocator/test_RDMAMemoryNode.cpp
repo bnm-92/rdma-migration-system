@@ -1,4 +1,4 @@
-#include "RDMAMemNode.hpp"
+#include "distributed-allocator/RDMAMemNode.hpp"
 
 /*
     tests to check for n connection mesh

@@ -11,9 +11,9 @@ Give it a message, and it when clients connect, clients will RDMA-read the messa
 #include <iostream>
 #include <utility>
 
-#include "miscutils.hpp"
+#include "utils/miscutils.hpp"
 
-#include "rdma_server.hpp"
+#include "rdma-network/rdma_server.hpp"
 
 int main (int argc, char** argv) {
     if (argc != 2) {

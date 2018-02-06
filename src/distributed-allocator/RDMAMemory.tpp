@@ -22,6 +22,32 @@ RDMAMemory::RDMAMemory(int owner, void* addr, size_t size, size_t page_size) :
     this->size = size;
 }
 
+#if FAULT_TOLERANT
+
+inline
+RDMAMemory::RDMAMemory(int owner, void* addr, size_t size, int64_t app_id) :
+    state(State::Clean),
+    pair(-1),
+    pages((uintptr_t)addr, size, 4096) {    
+    this->owner = owner;
+    this->vaddr = addr;
+    this->size = size;
+    this->application_id = app_id;
+}
+
+inline
+RDMAMemory::RDMAMemory(int owner, void* addr, size_t size, size_t page_size, int64_t app_id) :
+    state(State::Clean),
+    pair(-1),
+    pages((uintptr_t)addr, size, page_size) {    
+    this->owner = owner;
+    this->vaddr = addr;
+    this->size = size;
+    this->application_id = app_id;
+}
+
+#endif
+
 inline
 RDMAMemory::~RDMAMemory() {}
 
@@ -70,32 +96,78 @@ RDMAMemoryManager::~RDMAMemoryManager() {
 }
 
 inline
-void* RDMAMemoryManager::allocate(void* v_addr, size_t size){
-        // mmap this address.
-        RDMAMemory* r_memory = nullptr; 
-        int prot = PROT_READ | PROT_WRITE;
-        int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
-        int fd = -1;
-        off_t offset = 0;
-        void* res = (void*) mmap((void*)v_addr, size, prot, flags, fd, offset);
-        if (res == MAP_FAILED) {
-            std::string str = strerror(errno);
-            LogError("%s",str.c_str());
-            return nullptr;
-        }
+#if FAULT_TOLERANT
+void* RDMAMemoryManager::allocate(size_t size, int64_t application_id){
+    LogInfo("allocating using zookeeper, fetching memory address");
+
+    void* address = coordinator.getAllocationAddress(size);
+
+    // mmap this address.
+    int prot = PROT_READ | PROT_WRITE;
+    int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
+    int fd = -1;
+    off_t offset = 0;
+    void* res = (void*) mmap(address, size, prot, flags, fd, offset);
+    if (res == MAP_FAILED) {
+        std::string str = strerror(errno);
+        LogError("%s",str.c_str());
+        return nullptr;
+    }
+
     
-        LogInfo("called mmap on %p and returning address %p", v_addr, res);
-        LogAssert(v_addr == res, "asserting the addresses match");
-        
-        r_memory = new RDMAMemory(this->server_id, res, size);
-        memory_map[res] = r_memory; 
-        return r_memory->vaddr;
+    LogInfo("called mmap on %lu and returning address %lu", (uintptr_t)address, (uintptr_t)res);
+    LogAssert((uintptr_t)address == (uintptr_t)res, "asserting the addresses match");
+
+    coordinator.createMemorySegmentNode(address, size, this->server_id, -1, application_id);
+    coordinator.addToProcessList(application_id);
+    RDMAMemory* r_memory = new RDMAMemory(this->server_id, res, size);
+    local_segments[res] = r_memory; 
+    return r_memory->vaddr;
 }
 
-inline
-void* RDMAMemoryManager::allocate(size_t size){    
-    RDMAMemory* r_memory = nullptr; 
+int RDMAMemoryManager::deallocate(int64_t application_id) {
+    //this memory needs to be in memory map
+    auto map = this->coordinator.getMemorySegment(application_id);
+    size_t sz = 0;
+    std::string input = map["address"];
+    uintptr_t res = std::stoul(input, &sz, 0);
+ 
+    void* v_addr = (void*)(res);
+    size_t size = (size_t)stoull(map["size"]);
+    if(this->coordinator.server_id != atoi(map["source"].c_str())) {
+        // local deallocation
+        int res_munmap = munmap(v_addr, size);
+        if(res_munmap == -1) {
+            LogError("munmap failed beause %s", strerror(errno));
+        }
+    }
+
+    auto it = local_segments.find(v_addr);
+    LogAssert( it != local_segments.end(), "memory not found in memory map");
+
+    int rc = this->coordinator.deleteMemorySegment(application_id, this->coordinator.server_id);
+    if(rc == -1) {
+        LogWarning("deallocation failed");
+        return -1;
+    }
     
+    local_segments.erase(v_addr);
+    RDMAMemory *memory = local_segments.find(v_addr)->second;
+
+    this->coordinator.removeFromProcessList(memory->application_id);
+
+    int res_munmap = munmap(memory->vaddr, memory->size);
+    if(res_munmap == -1) {
+        LogError("munmap failed beause %s", strerror(errno));
+    } 
+
+    return 0;
+}
+
+#else
+void* RDMAMemoryManager::allocate(size_t size){
+    RDMAMemory* r_memory = nullptr; 
+
     std::unordered_map<size_t, std::vector<RDMAMemory*>>::const_iterator x = this->free_map.find(size);
     if(x != free_map.end()){
         LogInfo("memory found in free map");
@@ -183,20 +255,59 @@ void RDMAMemoryManager::deallocate(void* v_addr){
         vec.push_back(memory);
         free_map[memory->size] = vec;
     }
-
 }
 
+#endif
+
+#if FAULT_TOLERANT
 inline
-void RDMAMemoryManager::deallocate(void* v_addr, size_t size){
-    this->deallocate(v_addr);    
+void* RDMAMemoryManager::allocate(void* v_addr, size_t size, int64_t application_id){
+#else
+inline
+void* RDMAMemoryManager::allocate(void* v_addr, size_t size){
+#endif
+
+    // mmap this address.
+    RDMAMemory* r_memory = nullptr; 
+    int prot = PROT_READ | PROT_WRITE;
+    int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
+    int fd = -1;
+    off_t offset = 0;
+    void* res = (void*) mmap((void*)v_addr, size, prot, flags, fd, offset);
+    if (res == MAP_FAILED) {
+        std::string str = strerror(errno);
+        LogError("%s",str.c_str());
+        return nullptr;
+    }
+
+    LogInfo("called mmap on %p and returning address %p", v_addr, res);
+    LogAssert(v_addr == res, "asserting the addresses match");
+    
+    
+    #if FAULT_TOLERANT
+        r_memory = new RDMAMemory(this->server_id, res, size, application_id);
+        local_segments[res] = r_memory;
+    #else
+        r_memory = new RDMAMemory(this->server_id, res, size);
+        memory_map[res] = r_memory;
+    #endif
+
+    return r_memory->vaddr;
 }
+
 
 inline
 int RDMAMemoryManager::Prepare(void* v_addr, size_t size, int destination) {
-    LogAssert(memory_map.find(v_addr) != memory_map.end(), "memory not part of memory map");
-    LogAssert(memory_map.find(v_addr)->second->state == RDMAMemory::State::Clean, "memory not clean, please ensure all memory is local before moving it along");
+    #if FAULT_TOLERANT
+        LogAssert(local_segments.find(v_addr) != local_segments.end(), "memory not part of local list");
+        this->UpdatePair(v_addr, destination);
+    #else 
+        LogAssert(memory_map.find(v_addr) != memory_map.end(), "memory not part of memory map");
+        LogAssert(memory_map.find(v_addr)->second->state == RDMAMemory::State::Clean, "memory not clean, please ensure all memory is local before moving it along");
+        this->UpdatePair(v_addr, destination);
+    #endif
+
     uintptr_t conn_id = this->coordinator.connections[destination];
-    this->UpdatePair(v_addr, destination);
     this->register_memory(v_addr, size, destination);
     this->coordinator.getServer(destination, conn_id)->send_prepare(conn_id, v_addr, size);
     return 0;
@@ -219,7 +330,29 @@ int RDMAMemoryManager::prepare(void* v_addr, int destination){
     TODO write a accept helper to do this
     
 */
+#if FAULT_TOLERANT
 
+inline
+void* RDMAMemoryManager::accept(void* v_addr, size_t size, int source, int64_t client_id){
+    void* mem = this->allocate(v_addr, size, client_id);
+    //add to process list
+    this->coordinator.addToProcessList(client_id);
+    
+    uintptr_t conn_id = this->coordinator.connections[source];
+    if (mem == nullptr) {
+        LogInfo("could not allocate for accept, sending reject");
+        this->coordinator.getServer(source, conn_id)->send_decline(conn_id, mem, size);
+        return nullptr;
+    }
+    
+    LogInfo("registering memory");
+    this->coordinator.getServer(source, conn_id)->register_memory(this->coordinator.connections[source],v_addr, size, false);
+    LogInfo("sending accept");
+    this->coordinator.getServer(source, conn_id)->send_accept(conn_id, mem, size);
+   
+    return mem;
+}
+#else 
 inline
 void* RDMAMemoryManager::accept(void* v_addr, size_t size, int source){
     void* mem = this->allocate(v_addr, size);
@@ -231,7 +364,7 @@ void* RDMAMemoryManager::accept(void* v_addr, size_t size, int source){
     }
 
     this->UpdatePair(mem, source);
-
+    
     LogInfo("registering memory");
     this->coordinator.getServer(source, conn_id)->register_memory(this->coordinator.connections[source],v_addr, size, false);
     LogInfo("sending accept");
@@ -239,6 +372,7 @@ void* RDMAMemoryManager::accept(void* v_addr, size_t size, int source){
    
     return mem;
 }
+#endif
 
 inline
 int RDMAMemoryManager::Transfer(void* v_addr, size_t size, int destination){
@@ -306,6 +440,12 @@ void RDMAMemoryManager::close(void* v_addr, size_t size, int source) {
         }
         UpdateState(v_addr, RDMAMemory::State::Clean);
     #endif
+
+    #if FAULT_TOLERANT
+        int64_t app_id = local_segments[v_addr]->application_id;
+        this->coordinator.cleanMemorySegment(app_id);
+    #endif
+
     uintptr_t conn_id = this->coordinator.connections[source];
     this->coordinator.getServer(source, conn_id)->send_close(conn_id, v_addr, size);
     this->deregister_memory(v_addr, size, source);
@@ -409,6 +549,12 @@ RDMAMemoryManager::RDMAMessage::Type RDMAMemoryManager::getMessageType(rdma_mess
         return RDMAMessage::Type::DECLINE;
     } else if(type == rdma_message::MessageType::MSG_TRANSFER) {
         return RDMAMessage::Type::TRANSFER;
+    } else if(type == rdma_message::MessageType::MSG_USER) {
+        return RDMAMessage::Type::USER;
+    } else if(type == rdma_message::MessageType::MSG_GET_PARTITIONS) {
+        return RDMAMessage::Type::GETPARTITIONS;
+    } else if(type == rdma_message::MessageType::MSG_SENT_PARTITIONS) {
+        return RDMAMessage::Type::SENTPARTITIONS;
     } else {
         return RDMAMessage::Type::DONE;
     }
@@ -420,7 +566,7 @@ RDMAMemoryManager::RDMAMessage* RDMAMemoryManager::GetMessage(int source) {
     std::pair<void*, size_t> message = this->coordinator.getServer(source, conn_id)->receive(conn_id);
 
     struct rdma_message* msg = (struct rdma_message*) message.first;
-    return new RDMAMessage(msg->region_info.addr, msg->region_info.length, this->getMessageType(msg->message_type));
+    return new RDMAMessage(msg->region_info.addr, msg->region_info.length, this->getMessageType(msg->message_type), msg->data);
 }
 
 inline
@@ -476,8 +622,14 @@ int RDMAMemoryManager::push(void* v_addr){
 inline 
 void RDMAMemoryManager::on_close(void* addr, size_t size, int pair) {
     this->deregister_memory(addr, size, pair);
-    std::unordered_map<void*, RDMAMemory*>::iterator it = this->memory_map.find(addr);
-    LogAssert(it != memory_map.end(), "memory not allocated");
+    #if FAULT_TOLERANT
+        std::unordered_map<void*, RDMAMemory*>::iterator it = this->local_segments.find(addr);
+        LogAssert(it != local_segments.end(), "memory not allocated");
+    #else
+        std::unordered_map<void*, RDMAMemory*>::iterator it = this->memory_map.find(addr);
+        LogAssert(it != memory_map.end(), "memory not allocated");
+    #endif
+
     this->incoming_dones.enqueue(it->second);
 }
 
@@ -492,22 +644,59 @@ void RDMAMemoryManager::poller_thread_method() {
         void* addr = message->addr;
         size_t size = message->size;
 
+
         if(message->type == RDMAMessage::Type::PREPARE) {
-            this->accept(addr, size, source);
+            #if FAULT_TOLERANT
+                int64_t client_id = atol(message->data);
+                this->accept(addr, size, source, client_id);
+            #else
+                this->accept(addr, size, source);
+            #endif
         } else if(message->type == RDMAMessage::Type::ACCEPT) {
-            std::unordered_map<void*, RDMAMemory*>::iterator it = this->memory_map.find(addr);
-            LogAssert(it != memory_map.end(), "memory not allocated");
+            #if FAULT_TOLERANT
+                std::unordered_map<void*, RDMAMemory*>::iterator it = this->local_segments.find(addr);
+                LogAssert(it != local_segments.end(), "memory not allocated");
+                int64_t client_id = it->second->application_id;
+                this->coordinator.updateSegmentDestination(client_id, it->second->pair);                
+            #else
+                std::unordered_map<void*, RDMAMemory*>::iterator it = this->memory_map.find(addr);
+                LogAssert(it != memory_map.end(), "memory not allocated");            
+            #endif
             this->incoming_accepts.enqueue(it->second);
         } else if(message->type == RDMAMessage::Type::DECLINE) {
             this->deregister_memory(addr, size, source);
             //maybe add notification to top
         } else if(message->type == RDMAMessage::Type::TRANSFER) {
             this->on_transfer(addr, size, source);
-            std::unordered_map<void*, RDMAMemory*>::iterator it = this->memory_map.find(addr);
-            LogAssert(it != memory_map.end(), "memory not allocated");
+            #if FAULT_TOLERANT
+                std::unordered_map<void*, RDMAMemory*>::iterator it = this->local_segments.find(addr);
+                LogAssert(it != local_segments.end(), "memory not allocated");
+            #else
+                std::unordered_map<void*, RDMAMemory*>::iterator it = this->memory_map.find(addr);
+                LogAssert(it != memory_map.end(), "memory not allocated");
+            #endif
+
             this->incoming_transfers.enqueue(it->second);
         } else if(message->type == RDMAMessage::Type::DONE) {
             this->on_close(addr, size, source);
+        } else if(message->type == RDMAMessage::Type::GETPARTITIONS) {
+            #if FAULT_TOLERANT
+                std::string str;
+                for (auto x : local_segments) {
+                    if(x.second->state == RDMAMemory::State::Clean){
+                        str.append(std::to_string(x.second->application_id));
+                        str.append(",");
+                    }
+                }
+                uintptr_t conn_id = this->coordinator.connections[source];
+                this->coordinator.getServer(source, conn_id)->sendPartitionList(conn_id,str);
+            #endif
+        }else if(message->type == RDMAMessage::Type::SENTPARTITIONS) {
+            std::string data = message->data;
+            #if FAULT_TOLERANT
+                this->coordinator.partition_list = data;
+                sem_post(&this->coordinator.sem_get_partition_list);
+            #endif
         }
     }
 }
