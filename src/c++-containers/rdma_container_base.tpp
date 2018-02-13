@@ -156,5 +156,5 @@ template <class T>
 inline
 void RDMAContainerBase<T>::SetPageSize(size_t size) {
     if(rdma_memory != nullptr)
-        this->rdma_memory->pages->setPageSize(size);
+        this->rdma_memory->pages.setPageSize(size);
 }
