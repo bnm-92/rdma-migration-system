@@ -18,7 +18,7 @@ rdma-migration-system is C++11 project that also requires the rdma-cma library f
 the container library is built using gcc 5, to correctly configure this please install gcc 5.4.0
 To configure C++11 on the syn cluster, run:
 ``
-	update-alternatives --install /usr/bin/gcc gcc /home/share/gcc/gcc5/bin/gcc 50 --slave /usr/bin/g++ g++ /home/share/gcc/gcc5/bin/g++
+	sudo update-alternatives --install /usr/bin/gcc gcc /home/share/gcc/gcc5/bin/gcc 50 --slave /usr/bin/g++ g++ /home/share/gcc/gcc5/bin/g++
 	export LD_LIBRARY_PATH=/home/share/gcc/gcc5/lib64
 ``
 
