@@ -99,7 +99,7 @@ inline
 #if FAULT_TOLERANT
 void* RDMAMemoryManager::allocate(size_t size, int64_t application_id){
     LogInfo("allocating using zookeeper, fetching memory address");
-
+    RDMAMemory* r_memory = nullptr;
     void* address = coordinator.getAllocationAddress(size);
 
     // mmap this address.
@@ -118,11 +118,24 @@ void* RDMAMemoryManager::allocate(size_t size, int64_t application_id){
     LogInfo("called mmap on %lu and returning address %lu", (uintptr_t)address, (uintptr_t)res);
     LogAssert((uintptr_t)address == (uintptr_t)res, "asserting the addresses match");
 
-    coordinator.createMemorySegmentNode(address, size, this->server_id, -1, application_id);
-    coordinator.addToProcessList(application_id);
-    RDMAMemory* r_memory = new RDMAMemory(this->server_id, res, size);
+    if (coordinator.createMemorySegmentNode(address, size, this->server_id, -1, application_id) != 0) {
+        goto failure_;
+    }
+
+    if (coordinator.addToProcessList(application_id) != 0) {
+        goto failure_;
+    }
+    
+    r_memory = new RDMAMemory(this->server_id, res, size);
     local_segments[res] = r_memory; 
     return r_memory->vaddr;
+
+    failure_:
+    int res_munmap = munmap(res, size);
+    if(res_munmap == -1) {
+        LogError("munmap failed beause %s", strerror(errno));
+    }
+    return nullptr;
 }
 
 int RDMAMemoryManager::deallocate(int64_t application_id) {

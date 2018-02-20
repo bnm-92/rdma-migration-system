@@ -75,8 +75,6 @@ int test_serialization_deserialization2() {
     return 0;
 }
 
-
-
 // int test_zookeeper() {
 //     ZooKeeper zk("127.0.0.1:2181", 1000, nullptr);
 //     printf("established connection\n");

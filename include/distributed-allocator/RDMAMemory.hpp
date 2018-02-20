@@ -132,6 +132,7 @@ public:
     int PullAsync(void* v_addr, size_t size, int source, void (*callback)(void*), void* data);
 
     void MarkPageLocal(RDMAMemory* memory, void* address, size_t size);
+    RDMAMemNode coordinator;
 private:
     int pull(void* v_addr, int source);
     int push(void* v_addr, int destination);
@@ -202,7 +203,6 @@ private:
     
     uintptr_t alloc_address;
 
-    RDMAMemNode coordinator;
     //memory list
     std::unordered_map<void*, RDMAMemory*> memory_map;
     //free list

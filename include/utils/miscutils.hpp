@@ -19,7 +19,7 @@
 /**
  * enables demand paging and sets up pages and sigsegv handler
 */
-#define PAGING 1
+#define PAGING 0
 
 /**
  * enable fault tolerance
@@ -40,7 +40,7 @@
 */
 #define DEBUG 1
 #define LEVEL 3
-#define LogMessage(Level, SEVERITY, ...) do { if (DEBUG && Level >= LEVEL) {fprintf(stderr, "%s %s:%03u in %s : ", SEVERITY, __FILE__, __LINE__, __FUNCTION__); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); fflush(stderr);}if(Level == 0) {fflush(stderr); exit(1);}} while(false)
+#define LogMessage(Level, SEVERITY, ...) do { if (DEBUG && Level <= LEVEL) {fprintf(stderr, "%s %s:%03u in %s : ", SEVERITY, __FILE__, __LINE__, __FUNCTION__); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); fflush(stderr);}if(Level == 0) {fflush(stderr); /*exit(1);*/}} while(false)
 
 #define LogError(...) LogMessage(0, "ERROR", __VA_ARGS__)
 #define LogInfo(...) LogMessage(3, "INFO", __VA_ARGS__)
@@ -332,7 +332,7 @@ public:
                 //     this->zk_errorfile = fopen(token.c_str(), "w");
                 // }
 
-                this->zk_errorfile = token == "null"? nullptr : fopen(token.c_str(), "w");
+                this->zk_errorfile = token == "null" ? nullptr : fopen(token.c_str(), "w");
             }
 
             #endif
