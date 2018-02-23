@@ -110,7 +110,7 @@ public:
       const std::string& data,
       const ACL_vector& acl,
       int flags,
-      std::string* result);
+      std::string** result);
 
   /**
    * \brief delete a node in zookeeper synchronously.
@@ -171,12 +171,12 @@ public:
    */
   int get(
       const std::string& path,
-      std::string* result,
+      std::string** result,
       Stat* stat);
 
   int wget(
       const std::string& path,
-      std::string* result,
+      std::string** result,
       Stat* stat, 
       watcher_fn watcher, 
       void* watcherCtx);
@@ -280,7 +280,7 @@ private:
      * should be treated as opaque. It is received from the server when a session
      * is established and needs to be sent back as-is when reconnecting a session.
      */
-    clientid_t z_cid;     
+    // clientid_t z_cid;     
 
     /**
      * Host port, used to connect to zookeeper servers
