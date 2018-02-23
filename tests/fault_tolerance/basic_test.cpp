@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
     } else {
         printf("one failed\n");
     }
-    void* two = manager.allocate(1024*1024, 0);
+    void* two = manager.allocate(1024*1024, 1);
     if(two != nullptr) {
         printf("two succeeded\n");
     } else {
@@ -24,6 +24,14 @@ int main(int argc, char** argv) {
     }
 
     std::vector<std::map<std::string, std::string>> res = manager.coordinator.GetPartitionsForProcess(server_id);
+    for (auto x : res) {
+        for (auto it : x)
+            std::cout << it.first << " " << it.second << std::endl;
+    }
+
+    manager.deallocate(1);
+
+    res = manager.coordinator.GetPartitionsForProcess(server_id);
     for (auto x : res) {
         for (auto it : x)
             std::cout << it.first << " " << it.second << std::endl;

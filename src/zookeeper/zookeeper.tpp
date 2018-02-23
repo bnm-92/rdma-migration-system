@@ -109,11 +109,6 @@ int ZooKeeper::get(
         *result = new std::string(buflen, '\0');
         int rc = zoo_get(this->zh, path.c_str(), false, &(*(*result))[0], &buflen, stat);
         
-        if(rc == ZOK) {
-            LogInfo("read len on get %d", buflen);
-            LogInfo("read %s", (*result)->c_str());
-        }
-        
         if(buflen != -1)
             (*result)->resize(strlen((*result)->c_str()));
         return rc;

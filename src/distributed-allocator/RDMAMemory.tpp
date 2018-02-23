@@ -126,7 +126,7 @@ void* RDMAMemoryManager::allocate(size_t size, int64_t application_id){
         goto failure_;
     }
     
-    r_memory = new RDMAMemory(this->server_id, res, size);
+    r_memory = new RDMAMemory(this->server_id, res, size, application_id);
     local_segments[res] = r_memory; 
     return r_memory->vaddr;
 
@@ -140,23 +140,31 @@ void* RDMAMemoryManager::allocate(size_t size, int64_t application_id){
 
 int RDMAMemoryManager::deallocate(int64_t application_id) {
     //this memory needs to be in memory map
+    LogInfo("deallocation");
     auto map = this->coordinator.getMemorySegment(application_id);
     size_t sz = 0;
     std::string input = map["address"];
     uintptr_t res = std::stoul(input, &sz, 0);
  
     void* v_addr = (void*)(res);
-    size_t size = (size_t)stoull(map["size"]);
-    if(this->coordinator.server_id != atoi(map["source"].c_str())) {
+    size_t size = (size_t)stoull(map["size"]);   
+
+    LogInfo("serverid is %d and source is %d", this->coordinator.server_id, atoi(map["source"].c_str()));
+
+    if(this->coordinator.server_id == atoi(map["source"].c_str())) {
         // local deallocation
         int res_munmap = munmap(v_addr, size);
         if(res_munmap == -1) {
             LogError("munmap failed beause %s", strerror(errno));
         }
-    }
+        RDMAMemory *memory = local_segments.find(v_addr)->second;
 
-    auto it = local_segments.find(v_addr);
-    LogAssert( it != local_segments.end(), "memory not found in memory map");
+        if(this->coordinator.removeFromProcessList(memory->application_id) != 0) {
+            LogError("could not update process list");
+        }
+        local_segments.erase(v_addr);
+        
+    }
 
     int rc = this->coordinator.deleteMemorySegment(application_id, this->coordinator.server_id);
     if(rc == -1) {
@@ -164,16 +172,6 @@ int RDMAMemoryManager::deallocate(int64_t application_id) {
         return -1;
     }
     
-    local_segments.erase(v_addr);
-    RDMAMemory *memory = local_segments.find(v_addr)->second;
-
-    this->coordinator.removeFromProcessList(memory->application_id);
-
-    int res_munmap = munmap(memory->vaddr, memory->size);
-    if(res_munmap == -1) {
-        LogError("munmap failed beause %s", strerror(errno));
-    } 
-
     return 0;
 }
 

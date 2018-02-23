@@ -56,6 +56,7 @@ cfg(), server(nullptr), zk(nullptr) {
         }
     } else {
         //overwrite the data
+        LogWarning("node may not have been cleaned");
         int rc = zk->set(process_path, "", stat.version);
         if(rc != ZOK) {
             LogError("could not reset %s in zookeeper", process_path.c_str());
@@ -246,6 +247,7 @@ int RDMAMemNode::deleteMemorySegment(int64_t app_id, int source) {
 }
 
 int RDMAMemNode::addToProcessList(int64_t id) {
+    LogInfo("adding id to process %ld", id);
     Stat stat;
     std::string **result = (std::string**)malloc(sizeof(std::string*));
     std::string path = process_node + std::to_string(this->server_id);
@@ -266,6 +268,8 @@ int RDMAMemNode::addToProcessList(int64_t id) {
 }
 
 int RDMAMemNode::removeFromProcessList(int64_t id) {
+    LogInfo("removing from process list");
+    
     Stat stat;
     std::string **result = (std::string**)malloc(sizeof(std::string*));
     std::string path = process_node + std::to_string(this->server_id);
@@ -274,10 +278,16 @@ int RDMAMemNode::removeFromProcessList(int64_t id) {
         LogError("zk reading problem for process list");
     }
 
-    std::vector<int64_t> vec = ZStoProcessList(*(*result));
-    vec.erase(std::remove(vec.begin(), vec.end(), id), vec.end());
+    LogInfo("current list %s, removing %ld", (*(*result)).c_str(), id);
 
-    zk->set(path, ProcessListtoZS(vec), stat.version);
+    std::vector<int64_t> vec = ZStoProcessList(*(*result));
+    
+    vec.erase(std::remove(vec.begin(), vec.end(), id), vec.end());
+    
+    std::string new_list = ProcessListtoZS(vec);
+    LogInfo("new list is : %s", new_list.c_str());
+    zk->set(path, new_list, stat.version);
+    
     if(rc != ZOK) {
         LogError("could not update process list");
         return -1;
