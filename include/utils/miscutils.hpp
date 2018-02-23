@@ -309,6 +309,7 @@ public:
             #if FAULT_TOLERANT
             // lets take zookeeper parameters, zookeeperserverlist,heartbeats_timeout,logFile
             if(std::getline(is_stream, line)) {
+                LogInfo("zookeeper config is %s", line.c_str());
                 std::stringstream stm(line);
                 char delim = ',';
                 std::string token;

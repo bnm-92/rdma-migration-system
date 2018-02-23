@@ -27,6 +27,7 @@ FILE * file) :
         zoo_set_log_stream(file);
     }
     zoo_set_debug_level(ZOO_LOG_LEVEL_WARN);
+    // zoo_set_debug_level(ZOO_LOG_LEVEL_DEBUG);
     
     zh = zookeeper_init(list_zservers.c_str(), global_watch_CB, this->sessionTimeout, 0, (void*)this, 0);
     if(!zh) {
@@ -129,9 +130,11 @@ int ZooKeeper::getChildren(
     String_vector sv;
     int rc = zoo_get_children(this->zh, path.c_str(), false, &sv);
     int entries = sv.count;
+    char** res = sv.data;
     for (int i=0; i<entries; i++) {
-        std::string s((*sv.data) + i);
+        std::string s((*res));
         results->push_back(s);
+        res++;
     }
     return rc;
 }
@@ -141,9 +144,12 @@ int ZooKeeper::wgetChildren(const std::string& path, std::vector<std::string>* r
     String_vector sv;
     int rc = zoo_wget_children(this->zh, path.c_str(), watcher, watcherCtx, &sv);
     int entries = sv.count;
+    LogInfo("number of entries %d", entries);
+    char** res = sv.data;
     for (int i=0; i<entries; i++) {
-        std::string s((*sv.data) + i);
+        std::string s((*res));
         results->push_back(s);
+        res++;
     }
     return rc;
 }

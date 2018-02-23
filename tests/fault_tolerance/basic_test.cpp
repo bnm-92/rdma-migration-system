@@ -2,7 +2,7 @@
 
 int main(int argc, char** argv) {
     if (argc < 3) {
-        printf("./basic_test config id server_id\n");
+        printf("./basic_test config server_id\n");
         return 1;
     }
     int server_id = atoi(argv[2]);

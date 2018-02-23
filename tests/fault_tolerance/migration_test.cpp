@@ -3,7 +3,7 @@
 
 int main(int argc, char** argv) {
     if (argc < 3) {
-        printf("./basic_test config id server_id\n");
+        printf("./migration_test config.txt server_id\n");
         return 1;
     }
 
@@ -12,8 +12,8 @@ int main(int argc, char** argv) {
     
     printf("starting experiments\n");
 
-    printf("connecting to zookeeper for leader election algorithm");
-    ZooKeeper zk("10.70.0.4:2181" , "1000" ,"null");
+    printf("connecting to zookeeper for leader election algorithm\n");
+    ZooKeeper zk("10.30.0.14:2181" , 2000 , nullptr);
 
     // set up failure detection
     Stat stat;
@@ -27,27 +27,41 @@ int main(int argc, char** argv) {
     // node exists so you may simply add your node to it
     std::string** res = (std::string**)malloc(sizeof(std::string*));;
     std::string path = node + "/" +std::to_string(server_id);
-    zk.create(path, "", ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL, res);
+    
+    rc = zk.create(path, "", ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL, res);
+
+    if(rc == ZOK) {
+        std::cout << "created node " << path << std::endl; 
+    }
 
     //make callback watcher function
         void (*fn) (zhandle_t *zzh, int type, int state, const char *path, void* context) = ([](zhandle_t *zzh, int type, int state, const char *path, void* context) -> void {
-        printf("in call back at server %d\n", server_id);
-        std::vector<std::string>* results;
-        int rc = zk.getChildren(node, results);
+        printf("in call back at server\n");
+        
+        ZooKeeper *zk = (ZooKeeper*)context;
+        
+        std::vector<std::string> results;
+        std::string node = "/faults";
+        
+        int rc = zk->getChildren(node, &results);
         if(rc != ZOK) {
             LogError("somethings wrong");
             exit(1);
         }
 
-        for (std::string x : *result) {
+        for (std::string x : results) {
             std::cout << x << std::endl;
         }
 
     });
     
-    //set watch on it
-    zk.wexists(node, &stat, fn, nullptr);
+    std::vector<std::string> vec;
+    zk.wgetChildren(node, &vec, fn, (void*)&zk);
 
+    // zk.wexists(node, &stat, fn, (void*)&zk);
+    for (std::string x : vec) {
+        std::cout << x << std::endl;
+    }
 
     while(1){}
 

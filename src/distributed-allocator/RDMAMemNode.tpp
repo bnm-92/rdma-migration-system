@@ -12,10 +12,12 @@ cfg(), server(nullptr), zk(nullptr) {
     //connect with zookeeper
     #if FAULT_TOLERANT
     LogInfo("connecting to zookeeper");
-    if (cfg.getZKLogFileHandle() == nullptr)
-        zk = new ZooKeeper(cfg.getZKServerList(), cfg.getZKHeartbeatTimeout(), stderr);
-    else
-        zk = new ZooKeeper(cfg.getZKServerList(), cfg.getZKHeartbeatTimeout(), cfg.getZKLogFileHandle());
+    // if (cfg.getZKLogFileHandle() == nullptr)
+    //     zk = new ZooKeeper(cfg.getZKServerList(), cfg.getZKHeartbeatTimeout(), stderr);
+    // else
+    //     zk = new ZooKeeper(cfg.getZKServerList(), cfg.getZKHeartbeatTimeout(), cfg.getZKLogFileHandle());
+
+    zk = new ZooKeeper(cfg.getZKServerList(), cfg.getZKHeartbeatTimeout(), stderr);
 
     // lets create basic zookeeper paths
     std::string **result = (std::string**)malloc(sizeof(std::string*));
@@ -23,16 +25,16 @@ cfg(), server(nullptr), zk(nullptr) {
 
     if(zk->exists(memory_segment_node, &stat) == ZNONODE) {
         int rc = zk->create(memory_segment_node, "", ZOO_OPEN_ACL_UNSAFE, 0, result);
-        if(rc != ZOK || rc != ZNODEEXISTS) {
-            LogError("Could not create %s in zookeeper", memory_segment_node.c_str());
+        if(rc != ZOK && rc != ZNODEEXISTS) { 
+            LogError("Could not create %s in zookeeper because %s", memory_segment_node.c_str(), zk->toString(rc).c_str());
         }
     }
     free(*result);
 
     if(zk->exists(process_node, &stat) == ZNONODE) {
         int rc = zk->create(process_node, "", ZOO_OPEN_ACL_UNSAFE, 0, result);
-        if(rc != ZOK || rc != ZNODEEXISTS) {
-            LogError("Could not create %s in zookeeper", process_node.c_str());
+        if(rc != ZOK && rc != ZNODEEXISTS) {
+            LogError("Could not create %s in zookeeper because %s", process_node.c_str(), zk->toString(rc).c_str());
         }
     }
     free(*result);
@@ -41,8 +43,8 @@ cfg(), server(nullptr), zk(nullptr) {
     std::string start_address_string = std::to_string(start_address);
     if(zk->exists(allocator_node, &stat) == ZNONODE) {
         int rc = zk->create(allocator_node, start_address_string, ZOO_OPEN_ACL_UNSAFE, 0, result);
-        if(rc != ZOK || rc != ZNODEEXISTS) {
-            LogError("Could not create %s in zookeeper", allocator_node.c_str());
+        if(rc != ZOK && rc != ZNODEEXISTS) {
+            LogError("Could not create %s in zookeeper because %s", allocator_node.c_str(), zk->toString(rc).c_str());
         }
     }
     free(*result);
