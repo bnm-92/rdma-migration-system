@@ -20,42 +20,63 @@ int main(int argc, char** argv) {
     std::string node = "/faults";
     int rc = zk.exists(node, &stat);
     if(rc == ZNONODE) {
-        std::string** res = ;
-        zk.create(node, "", ZOO_OPEN_ACL_UNSAFE,0, );
+        std::string** res = (std::string**)malloc(sizeof(std::string*));
+        zk.create(node, "", ZOO_OPEN_ACL_UNSAFE, 0, res);
     }
 
-        // node exists so you may simply add your node to it
-        std::string** res;
-        std::string path = node + "/" +std::to_string(server_id);
-        zk.create(path, "", ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL, res);
+    // node exists so you may simply add your node to it
+    std::string** res = (std::string**)malloc(sizeof(std::string*));;
+    std::string path = node + "/" +std::to_string(server_id);
+    zk.create(path, "", ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL, res);
+
+    //make callback watcher function
+        void (*fn) (zhandle_t *zzh, int type, int state, const char *path, void* context) = ([](zhandle_t *zzh, int type, int state, const char *path, void* context) -> void {
+        printf("in call back at server %d\n", server_id);
+        std::vector<std::string>* results;
+        int rc = zk.getChildren(node, results);
+        if(rc != ZOK) {
+            LogError("somethings wrong");
+            exit(1);
+        }
+
+        for (std::string x : *result) {
+            std::cout << x << std::endl;
+        }
+
+    });
+    
+    //set watch on it
+    zk.wexists(node, &stat, fn, nullptr);
 
 
-    void* one = manager.allocate(1024*1024, 0);
-    if(one != nullptr) {
-        printf("one succeeded\n");
-    } else {
-        printf("one failed\n");
-    }
-    void* two = manager.allocate(1024*1024, 1);
-    if(two != nullptr) {
-        printf("two succeeded\n");
-    } else {
-        printf("two failed\n");
-    }
+    while(1){}
 
-    std::vector<std::map<std::string, std::string>> res = manager.coordinator.GetPartitionsForProcess(server_id);
-    for (auto x : res) {
-        for (auto it : x)
-            std::cout << it.first << " " << it.second << std::endl;
-    }
+    // void* one = manager.allocate(1024*1024, 0);
+    // if(one != nullptr) {
+    //     printf("one succeeded\n");
+    // } else {
+    //     printf("one failed\n");
+    // }
+    // void* two = manager.allocate(1024*1024, 1);
+    // if(two != nullptr) {
+    //     printf("two succeeded\n");
+    // } else {
+    //     printf("two failed\n");
+    // }
 
-    manager.deallocate(1);
+    // std::vector<std::map<std::string, std::string>> res = manager.coordinator.GetPartitionsForProcess(server_id);
+    // for (auto x : res) {
+    //     for (auto it : x)
+    //         std::cout << it.first << " " << it.second << std::endl;
+    // }
 
-    res = manager.coordinator.GetPartitionsForProcess(server_id);
-    for (auto x : res) {
-        for (auto it : x)
-            std::cout << it.first << " " << it.second << std::endl;
-    }
+    // manager.deallocate(1);
+
+    // res = manager.coordinator.GetPartitionsForProcess(server_id);
+    // for (auto x : res) {
+    //     for (auto it : x)
+    //         std::cout << it.first << " " << it.second << std::endl;
+    // }
 
     return 0;
 }
