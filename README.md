@@ -35,27 +35,27 @@ For fault-tolerance mode, please zookeeper:
 Zookeeper dependencies:
 
 ``
-sudo apt-get install libcppunit-dev
-sudo apt-get install python-setuptools
-sudo apt-get install ant
+	sudo apt-get install libcppunit-dev
+	sudo apt-get install python-setuptools
+	sudo apt-get install ant
 ``
 
 clone zookeeper, for this project we are using zookeeper-3.4.11
 
 on zookeeper top level directory:
 ``
-sudo ant
-sudo ant deb
-sudo ant compile_jute
+	sudo ant
+	sudo ant deb
+	sudo ant compile_jute
 ``
 cd zookeeper-3.x.x/src/c
 add subdir-objects to AM_INIT_AUTOMAKE in configure.ac
 
 ``
-autoreconf -if
-./configure
-make 
-make install
+	autoreconf -if
+	./configure
+	make 
+	make install
 ``
 
 for more inforamtion please see: https://github.com/apache/zookeeper/tree/master/src/c
@@ -63,7 +63,7 @@ for more inforamtion please see: https://github.com/apache/zookeeper/tree/master
 for only client library/bindings, simpy do:
 
 ``
-sudo apt-get install libzookeeper-mt2
+	sudo apt-get install libzookeeper-mt2
 ``
 
 
