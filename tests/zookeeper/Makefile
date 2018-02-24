@@ -6,16 +6,16 @@ CXXFLAGS := -Wall -g -rdynamic -std=c++11 -MMD -I../../include/ -I../../src
 LDFLAGS := ${LDFLAGS} -lrdmacm -libverbs -lpthread -lzookeeper_mt
 # -std=c++11: Compile with the C++11 standard.
 # -MMD: Autogenerate dependency files (.d).
-APPS := test_connect
-DEPENDS = test_connect.d
+APPS := test_basic test_zkconfig
+DEPENDS = test_basic.d test_zkconfig.d
 
 all: ${APPS}
 
-test_connect: test_connect.o 
+test_basic: test_basic.o 
 	${CXX} -o $@ $^ ${CXXFLAGS} ${LDFLAGS}
 
-# zookeeper.o:
-# 	${CXX} -o $@ ${CXXFLAGS} -c ../../src/zookeeper/zookeeper.cpp ${LDFLAGS} 
+test_zkconfig: test_zkconfig.o 
+	${CXX} -o $@ $^ ${CXXFLAGS} ${LDFLAGS}
 
 -include ${DEPENDS}
 
