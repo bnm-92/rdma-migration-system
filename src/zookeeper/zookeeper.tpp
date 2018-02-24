@@ -72,20 +72,20 @@ int ZooKeeper::create(
     const std::string& data,
     const ACL_vector& acl,
     int flags,
-    std::string** result) {
+    std::string* result) {
 
     int buflen = BUFLEN;
-    (*result) = new std::string(buflen, '\0');
+    (*result) = std::string(buflen, '\0');
     
     int rc =  zoo_create(this->zh, path.c_str(), data.data(),
         static_cast<int>(data.size()),
         &acl,
         flags,
-        &(*(*result))[0], 
+        &((*result))[0], 
         buflen);
 
     if(buflen != -1)
-        (*result)->resize(strlen((*result)->c_str()));
+        (result)->resize(strlen((result)->c_str()));
     
     return rc;
 }
@@ -104,23 +104,23 @@ int ZooKeeper::wexists(const std::string& path, Stat* stat, watcher_fn watcher, 
 
 int ZooKeeper::get(
     const std::string& path,
-    std::string** result,
+    std::string* result,
     Stat* stat) {
         int buflen = BUFLEN;
-        *result = new std::string(buflen, '\0');
-        int rc = zoo_get(this->zh, path.c_str(), false, &(*(*result))[0], &buflen, stat);
+        *result = std::string(buflen, '\0');
+        int rc = zoo_get(this->zh, path.c_str(), false, &(*(result))[0], &buflen, stat);
         
         if(buflen != -1)
-            (*result)->resize(strlen((*result)->c_str()));
+            (result)->resize(strlen((result)->c_str()));
         return rc;
 }
 
-int ZooKeeper::wget(const std::string& path, std::string** result, Stat* stat, watcher_fn watcher, void* watcherCtx) {
+int ZooKeeper::wget(const std::string& path, std::string* result, Stat* stat, watcher_fn watcher, void* watcherCtx) {
     int buflen = BUFLEN;
-    *result = new std::string(buflen, '\0');
-    int rc = zoo_wget(this->zh, path.c_str(), watcher, watcherCtx, &(*(*result))[0], &buflen, stat);
+    *result = std::string(buflen, '\0');
+    int rc = zoo_wget(this->zh, path.c_str(), watcher, watcherCtx, &(*(result))[0], &buflen, stat);
     if(buflen != -1)
-        (*result)->resize(strlen((*result)->c_str()));
+        (result)->resize(strlen((result)->c_str()));
     return rc;
 }
 

@@ -95,9 +95,9 @@ int test_zookeeper() {
         printf("\"test node\" does not exists\n");
     }
 
-    std::string *result;
+    std::string result = "";
     
-    rc = zk.create(node, "node1:val1", ZOO_OPEN_ACL_UNSAFE, 0, result);
+    rc = zk.create(node, "node1:val1", ZOO_OPEN_ACL_UNSAFE, 0, &result);
 
     if(rc == ZOK) {
         printf("created node %s\n", node.c_str());
@@ -120,6 +120,14 @@ int test_zookeeper() {
     printf("return code was: %s\n", zk.toString(rc).c_str());
     fflush(stdout);
 
+    std::string res = "";
+    rc = zk.get(node, &res, &stat);
+    if(rc != ZOK) {
+        printf("error in get");
+    }
+
+    printf("get was %s\n", res.c_str());
+
     // while(true){}
     zk.Close();
     return 0;
@@ -127,5 +135,6 @@ int test_zookeeper() {
 
 int main(int argc, char** argv) {
  test_serialization_deserialization2();
+ test_zookeeper();
  return 0;
 }

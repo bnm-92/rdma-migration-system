@@ -38,7 +38,11 @@ Zookeeper dependencies:
 	sudo apt-get install libcppunit-dev
 	sudo apt-get install python-setuptools
 	sudo apt-get install ant
+	sudo apt-get install autoconf
+	sudo apt-get install automake
 ``
+
+please note, this is not a complete list of dependencies
 
 clone zookeeper, for this project we are using zookeeper-3.4.11
 

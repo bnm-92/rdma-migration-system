@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    initialize();
+    // initialize();
     RDMAMemoryManager* memory_manager = new RDMAMemoryManager(argv[1], atoi(argv[2]));
     while(1){} 
     return 0;
