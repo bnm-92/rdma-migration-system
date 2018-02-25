@@ -2,7 +2,7 @@
 
 int main(int argc, char** argv) {
     if (argc < 3) {
-        LogError("number of arguments provided to test_RDMAMemory too few");
+        LogError("./testRDMAMemoryTransfer config server_id bytes");
         return 1;
     }
     int server_id = atoi(argv[2]);
@@ -59,5 +59,6 @@ int main(int argc, char** argv) {
         manager.close(rdma_memory->vaddr, rdma_memory->size, rdma_memory->pair);
     }
 
+    LogInfo("DONE");
     return 0;
 }
