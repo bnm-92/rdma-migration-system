@@ -151,7 +151,9 @@ int RDMAMemoryManager::deallocate(int64_t application_id) {
 
     LogInfo("serverid is %d and source is %d", this->coordinator.server_id, atoi(map["source"].c_str()));
 
-    if(this->coordinator.server_id == atoi(map["source"].c_str())) {
+    auto it = local_segments.find(v_addr);
+
+    if(it != local_segments.end()) {
         // local deallocation
         int res_munmap = munmap(v_addr, size);
         if(res_munmap == -1) {
@@ -320,7 +322,18 @@ int RDMAMemoryManager::Prepare(void* v_addr, size_t size, int destination) {
 
     uintptr_t conn_id = this->coordinator.connections[destination];
     this->register_memory(v_addr, size, destination);
-    this->coordinator.getServer(destination, conn_id)->send_prepare(conn_id, v_addr, size);
+    #if FAULT_TOLERANT
+        std::string x = (std::to_string(local_segments[v_addr]->application_id));
+        this->coordinator.getServer(destination, conn_id)->send_prepare(conn_id, 
+        v_addr, 
+        size, 
+        &(x[0]), 
+        x.size()
+        );
+    #else
+        this->coordinator.getServer(destination, conn_id)->send_prepare(conn_id, v_addr, size);
+    #endif
+    
     return 0;
 }
 
@@ -387,10 +400,19 @@ void* RDMAMemoryManager::accept(void* v_addr, size_t size, int source){
 
 inline
 int RDMAMemoryManager::Transfer(void* v_addr, size_t size, int destination){
-    auto x = memory_map.find(v_addr);
-    LogAssert(x != memory_map.end(), "could not find memory in allocated list");
+    RDMAMemory* rmemory = nullptr;
+    #if FAULT_TOLERANT
+        auto x = local_segments.find(v_addr);
+        LogAssert(x != local_segments.end(), "could not find memory in allocated list");
 
-    RDMAMemory* rmemory = x->second;
+        rmemory = x->second;
+    #else
+        auto x = memory_map.find(v_addr);
+        LogAssert(x != memory_map.end(), "could not find memory in allocated list");
+
+        RDMAMemory* rmemory = x->second;
+    #endif
+
     rmemory->owner = destination;
     rmemory->state = RDMAMemory::State::Shared;
     uintptr_t conn_id = this->coordinator.connections[destination];
@@ -444,18 +466,20 @@ void RDMAMemoryManager::on_transfer(void* v_addr, size_t size, int source) {
 
 inline
 void RDMAMemoryManager::close(void* v_addr, size_t size, int source) {
+    
     #if PAGING
-        if(mprotect(v_addr, size, PROT_NONE)  != 0) {
+        if(mprotect(v_addr, size, PROT_READ | PROT_WRITE)  != 0) {
             LogError("Mprotect failed");
             exit(errno);
         }
-        UpdateState(v_addr, RDMAMemory::State::Clean);
     #endif
 
     #if FAULT_TOLERANT
         int64_t app_id = local_segments[v_addr]->application_id;
         this->coordinator.cleanMemorySegment(app_id);
     #endif
+
+    UpdateState(v_addr, RDMAMemory::State::Clean);
 
     uintptr_t conn_id = this->coordinator.connections[source];
     this->coordinator.getServer(source, conn_id)->send_close(conn_id, v_addr, size);
@@ -483,10 +507,14 @@ int RDMAMemoryManager::PullAsync(void* v_addr, size_t size, int source, void (*c
 
 inline
 int RDMAMemoryManager::Pull(void* v_addr, size_t size, int source){
+    auto it = this->coordinator.connections.find(source);
+    if(it == this->coordinator.connections.end()){
+        return -1;
+    }
+
     uintptr_t conn_id = this->coordinator.connections[source];
     LogInfo("pulling memory at %p of size %zu", v_addr, size);
-    this->coordinator.getServer(source, conn_id)->rdma_read(conn_id, v_addr, v_addr, size);
-    return 0;
+    return this->coordinator.getServer(source, conn_id)->rdma_read(conn_id, v_addr, v_addr, size);
 }
 
 inline
@@ -517,16 +545,28 @@ void RDMAMemoryManager::deregister_memory(void* v_addr, size_t size, int destina
 
 inline
 int RDMAMemoryManager::UpdateState(void* memory, RDMAMemory::State state) {
-    auto x = this->memory_map.find(memory);
-    LogAssert(x != memory_map.end(), "could not find RDMA memory at specified location");
-    
-    if(x == memory_map.end()) {
+    #if FAULT_TOLERANT
+    auto x = this->local_segments.find(memory);
+
+    if(x == local_segments.end()) {
         LogError("Memory invalid");
         return -1;
     }
 
     RDMAMemory* mem = x->second;
     mem->state = state;
+    #else
+        auto x = this->memory_map.find(memory);
+        LogAssert(x != memory_map.end(), "could not find RDMA memory at specified location");
+        
+        if(x == memory_map.end()) {
+            LogError("Memory invalid");
+            return -1;
+        }
+
+        RDMAMemory* mem = x->second;
+        mem->state = state;
+    #endif
     return 0;
 }
 
@@ -546,8 +586,16 @@ int RDMAMemoryManager::HasMessage() {
 
 inline
 bool RDMAMemoryManager::HasMessage(int source) {
-    uintptr_t conn_id = this->coordinator.connections[source];
-    return this->coordinator.getServer(source, conn_id)->checkForMessage(conn_id);
+    try {
+        auto x = this->coordinator.connections.find(source);
+        if(x == this->coordinator.connections.end()) {
+            return false;
+        }
+        uintptr_t conn_id = this->coordinator.connections[source];
+        return this->coordinator.getServer(source, conn_id)->checkForMessage(conn_id);
+    } catch (std::exception& e) {
+        return false;
+    } 
 }
 
 inline
@@ -582,12 +630,25 @@ RDMAMemoryManager::RDMAMessage* RDMAMemoryManager::GetMessage(int source) {
 
 inline
 int RDMAMemoryManager::UpdatePair(void* memory, int id) {
-    auto x = this->memory_map.find(memory);
-    LogAssert(x != memory_map.end(), "could not find RDMA memory at specified location");
+    #if FAULT_TOLERANT
+        auto x = this->local_segments.find(memory);
+        if (x == local_segments.end()) {
+            LogError("could not find RDMA memory at specified location");
+            return -1;
+        }
     
-    RDMAMemory* mem = x->second;
-    mem->pair = id;
+        RDMAMemory* mem = x->second;
+        mem->pair = id;
+    #else
+        auto x = this->memory_map.find(memory);
+        if (x == memory_map.end()) {
+            LogError("could not find RDMA memory at specified location");
+            return -1;
+        }
     
+        RDMAMemory* mem = x->second;
+        mem->pair = id;
+    #endif
     return 0;
 }
 
@@ -659,6 +720,7 @@ void RDMAMemoryManager::poller_thread_method() {
         if(message->type == RDMAMessage::Type::PREPARE) {
             #if FAULT_TOLERANT
                 int64_t client_id = atol(message->data);
+                LogInfo("got client id %ld", client_id);
                 this->accept(addr, size, source, client_id);
             #else
                 this->accept(addr, size, source);
@@ -710,6 +772,17 @@ void RDMAMemoryManager::poller_thread_method() {
             #endif
         }
     }
+}
+
+std::vector<int64_t> RDMAMemoryManager::getLocalSegmentsList(){
+    std::vector<int64_t> vec;
+    for (auto x : local_segments) {
+        if(x.second->state == RDMAMemory::State::Clean){
+            vec.push_back(x.second->application_id);
+        }
+    }
+
+    return vec;
 }
 
 inline

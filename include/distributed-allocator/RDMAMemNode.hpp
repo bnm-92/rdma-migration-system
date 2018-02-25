@@ -72,6 +72,4 @@ public:
     #endif
 };
 
-#include "distributed-allocator/RDMAMemNode.tpp"
-
 #endif //RDMAMEMNODE

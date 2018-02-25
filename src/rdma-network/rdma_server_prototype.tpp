@@ -344,7 +344,7 @@ void RDMAServerPrototype::rdma_read_async(
 }
 
 inline
-void RDMAServerPrototype::rdma_read(
+int RDMAServerPrototype::rdma_read(
     uintptr_t conn_id, void* local_addr, void* remote_addr, size_t len
 ) {
     std::lock_guard<std::mutex> guard(user_mutex);
@@ -369,8 +369,9 @@ void RDMAServerPrototype::rdma_read(
         }
     }
     if (not lkey_found) {
-        throw std::logic_error(
-            "rdma_read called on locally unregistered memory!");
+        return -1;
+        // throw std::logic_error(
+        //     "rdma_read called on locally unregistered memory!");
     }
 
     uint32_t rkey = 0;
@@ -386,8 +387,9 @@ void RDMAServerPrototype::rdma_read(
         }
     }
     if (not rkey_found) {
-        throw std::logic_error(
-            "rdma_read called on remotely unregistered memory!");
+        return -1;
+        // throw std::logic_error(
+        //     "rdma_read called on remotely unregistered memory!");
     }
 
     // Now we can actually execute the read.
@@ -402,7 +404,7 @@ void RDMAServerPrototype::rdma_read(
     sem_wait(&sem);
     sem_destroy(&sem);
     LogInfo("read completed");
-    return;
+    return 0;
 }
 
 inline

@@ -133,6 +133,8 @@ public:
 
     void MarkPageLocal(RDMAMemory* memory, void* address, size_t size);
     RDMAMemNode coordinator;
+
+    std::vector<int64_t> getLocalSegmentsList();
 private:
     int pull(void* v_addr, int source);
     int push(void* v_addr, int destination);
@@ -223,8 +225,8 @@ private:
 };
 
 #include "distributed-allocator/RDMAMemory.tpp"
+#include "distributed-allocator/RDMAMemNode.tpp"
 #if PAGING
-static RDMAMemoryManager* manager = nullptr;
 static struct sigaction act;
 
 /*
@@ -245,6 +247,9 @@ static void sigsegv_advance(int signum, siginfo_t *info_, void* ptr) {
     void* addr = info_->si_addr;
     RDMAMemory* memory = manager->getRDMAMemory(addr);
     LogAssert(memory != nullptr, "memory not found");
+    if(memory == nullptr) {
+        throw std::logic_error("SIGSEGV");
+    }
     int source = memory->pair;
     
     addr = memory->pages.getPageAddress(addr);
@@ -256,7 +261,9 @@ static void sigsegv_advance(int signum, siginfo_t *info_, void* ptr) {
         return;
     }
     
-    manager->Pull(addr, page_size, source);
+    if (manager->Pull(addr, page_size, source) != 0) {
+        throw std::logic_error("RaMP Memory Error");
+    }
     memory->pages.setPageState(addr, PageState::Local);    
 
     if(mprotect(addr, page_size, PROT_READ | PROT_WRITE)) {

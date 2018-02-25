@@ -38,7 +38,7 @@
  * DEBUG and LEVEL signify how much tracing is followed in the system, 
  * TODO: update to take in a file parameter instead of spitting to stderr stream
 */
-#define DEBUG 1
+#define DEBUG 3
 #define LEVEL 3
 #define LogMessage(Level, SEVERITY, ...) do { if (DEBUG && Level <= LEVEL) {fprintf(stderr, "%s %s:%03u in %s : ", SEVERITY, __FILE__, __LINE__, __FUNCTION__); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); fflush(stderr);}if(Level == 0) {fflush(stderr); /*exit(1);*/}} while(false)
 
@@ -54,6 +54,11 @@
 */
 
 static int max_async_pending = 40;
+#if FAULT_TOLERANT || PAGING
+class RDMAMemoryManager; // forward decleration
+static RDMAMemoryManager* manager = nullptr;
+#endif
+
 
 /**
  * For fault tolerance branch, we are using ALLOCATABLE_RANGE_START

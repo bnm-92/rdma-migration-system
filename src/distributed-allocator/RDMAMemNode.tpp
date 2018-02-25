@@ -1,4 +1,5 @@
 #include <algorithm>
+#include "distributed-allocator/RDMAMemory.hpp"
 
 inline
 RDMAMemNode::RDMAMemNode(std::string config_path, int server_id): 
@@ -47,7 +48,7 @@ cfg(), server(nullptr), zk(nullptr) {
     }
 
     //create a process for yourself
-    std::string process_path = process_node + std::to_string(this->server_id);
+    std::string process_path = process_node + "/" + std::to_string(this->server_id);
     if(zk->exists(process_path, &stat) == ZNONODE) {
         int rc = zk->create(process_path, "", ZOO_OPEN_ACL_UNSAFE, 0, &result);
         if(rc != ZOK) {
@@ -160,7 +161,7 @@ int RDMAMemNode::createMemorySegmentNode(void* address, size_t size, int source,
 
     std::string segment_zk = MAPtoZS(segment_map);
     std::string result = "";
-    std::string path = memory_segment_node + std::to_string(clientSpecifiedID);
+    std::string path = memory_segment_node + "/" + std::to_string(clientSpecifiedID);
     int rc = zk->create(path, segment_zk, ZOO_OPEN_ACL_UNSAFE, 0, &result);
     if(rc != ZOK) {
         LogWarning("Could not create memory segment meta data on zookeeper because %s", zk->toString(rc).c_str());
@@ -173,7 +174,7 @@ int RDMAMemNode::createMemorySegmentNode(void* address, size_t size, int source,
 int RDMAMemNode::updateSegmentDestination(int64_t app_id, int destination) {
     Stat stat;
     std::string result = "";
-    std::string path = memory_segment_node + std::to_string(app_id);
+    std::string path = memory_segment_node + "/" + std::to_string(app_id);
     int rc = zk->get(path, &result, &stat);
     if(rc != ZOK) {
         LogError("zk reading problem for segment");
@@ -197,7 +198,7 @@ int RDMAMemNode::updateSegmentDestination(int64_t app_id, int destination) {
 int RDMAMemNode::cleanMemorySegment(int64_t app_id) {
     Stat stat;
     std::string result = "";
-    std::string path = memory_segment_node + std::to_string(app_id);
+    std::string path = memory_segment_node + "/" + std::to_string(app_id);
     int rc = zk->get(path, &result, &stat);
     if(rc != ZOK) {
         LogError("zk reading problem for segment");
@@ -221,7 +222,7 @@ int RDMAMemNode::cleanMemorySegment(int64_t app_id) {
 int RDMAMemNode::deleteMemorySegment(int64_t app_id, int source) {
     Stat stat;
     std::string result = "";
-    std::string path = memory_segment_node + std::to_string(app_id);
+    std::string path = memory_segment_node + "/" + std::to_string(app_id);
     int rc = zk->get(path, &result, &stat);
     if(rc != ZOK) {
         LogError("zk reading problem for segment");
@@ -230,8 +231,8 @@ int RDMAMemNode::deleteMemorySegment(int64_t app_id, int source) {
     auto map = ZStoMAP(result);
     int64_t source_zk = atoi((map["source"]).c_str());
     if(source != source_zk) {
-        LogWarning("rouge process tried to delete segment it did not recognise/understand");
-        return -1;
+        LogInfo("remote process deleted segment ");
+        // return -1;
     }
 
     rc = zk->remove(path, stat.version);
@@ -247,7 +248,7 @@ int RDMAMemNode::addToProcessList(int64_t id) {
     LogInfo("adding id to process %ld", id);
     Stat stat;
     std::string result = "";
-    std::string path = process_node + std::to_string(this->server_id);
+    std::string path = process_node + "/" + std::to_string(this->server_id);
     int rc = zk->get(path, &result, &stat);
     if(rc != ZOK) {
         LogError("zookeeper reading issue for process list %d", this->server_id);
@@ -269,7 +270,7 @@ int RDMAMemNode::removeFromProcessList(int64_t id) {
     
     Stat stat;
     std::string result = "";
-    std::string path = process_node + std::to_string(this->server_id);
+    std::string path = process_node + "/" + std::to_string(this->server_id);
     int rc = zk->get(path, &result, &stat);
     if(rc != ZOK) {
         LogError("zk reading problem for process list");
@@ -297,7 +298,7 @@ std::vector<std::map<std::string, std::string>> RDMAMemNode::GetPartitionsForPro
     LogInfo("getting partitions for process");
     Stat stat;
     std::string result = "";
-    std::string path = process_node + std::to_string(process_id);
+    std::string path = process_node + "/" + std::to_string(process_id);
     int rc = zk->get(path, &result, &stat);
     if(rc != ZOK) {
         LogError("Could not get partition list for process id %ld", process_id);
@@ -307,7 +308,7 @@ std::vector<std::map<std::string, std::string>> RDMAMemNode::GetPartitionsForPro
     std::vector<std::map<std::string, std::string>> segment_info;
     
     for(int64_t id : list) {
-        path = memory_segment_node + std::to_string(id);
+        path = memory_segment_node + "/" + std::to_string(id);
         rc = zk->get(path, &result, &stat);
         if(rc != ZOK) {
             LogError("Could not get memory segment for id %ld", id);
@@ -321,22 +322,26 @@ std::vector<std::map<std::string, std::string>> RDMAMemNode::GetPartitionsForPro
 }
 
 std::vector<int64_t> RDMAMemNode::GetLivePartitionsForProcess(int64_t process_id) {
-    uintptr_t conn_id = this->connections[process_id];
-    ASSERT_ZERO(sem_init(&sem_get_partition_list, 0, 0));
-    LogInfo("posting get partitions request");
-    this->getServer(process_id, conn_id)->getPartitionList(conn_id);
+    if(process_id != this->server_id) {
+        uintptr_t conn_id = this->connections[process_id];
+        ASSERT_ZERO(sem_init(&sem_get_partition_list, 0, 0));
+        LogInfo("posting get partitions request");
+        this->getServer(process_id, conn_id)->getPartitionList(conn_id);
+        
+
+        // And wait for the read to finish.
+        sem_wait(&sem_get_partition_list);
+        sem_destroy(&sem_get_partition_list);
+
+        return ZStoProcessList(this->partition_list);
+    }
     
-
-    // And wait for the read to finish.
-    sem_wait(&sem_get_partition_list);
-    sem_destroy(&sem_get_partition_list);
-
-    return ZStoProcessList(this->partition_list);
+    return manager->getLocalSegmentsList();
 }
 
 std::map<std::string, std::string> RDMAMemNode::getMemorySegment(int64_t app_id) {
     Stat stat;
-    std::string path = memory_segment_node + std::to_string(app_id);
+    std::string path = memory_segment_node + "/" + std::to_string(app_id);
     std::string result = "";
 
     int rc = zk->get(path, &result, &stat);

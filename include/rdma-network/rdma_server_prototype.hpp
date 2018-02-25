@@ -102,7 +102,7 @@ public:
     //
     // Precondition: you have called register_meomry on a region that includes
     // local_addr and length, and ditto for the remote server and remote_addr.
-    void rdma_read(uintptr_t conn_id, void* local_addr, void* remote_addr, size_t len);
+    int rdma_read(uintptr_t conn_id, void* local_addr, void* remote_addr, size_t len);
     void rdma_read_async(uintptr_t conn_id, void* local_addr, void* remote_addr, size_t len,void (*callback)(void*), void* data);
 
     void rdma_write(uintptr_t conn_id, void* local_addr, void* remote_addr, size_t len);
