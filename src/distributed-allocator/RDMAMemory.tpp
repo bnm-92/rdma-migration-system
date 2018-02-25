@@ -449,9 +449,17 @@ void RDMAMemoryManager::on_transfer(void* v_addr, size_t size, int source) {
         UpdateState(v_addr, RDMAMemory::State::Shared);
 
         #if PREFETCHING
+            RDMAMemory* rmemory = nullptr;
+            #if FAULT_TOLERANT
+            auto x = local_segments.find(v_addr);
+            LogAssert(x != local_segments.end(), "could not find memory in allocated list");
+            rmemory = x->second;
+            #else
             auto x = memory_map.find(v_addr);
             LogAssert(x != memory_map.end(), "could not find memory in allocated list");
-            RDMAMemory* rmemory = x->second;
+            rmemory = x->second; 
+            #endif
+            
             // std::thread(&RDMAMemoryManager::poller_thread_method, this).detach();
             #if ASYNC_PREFETCHING
                 std::thread(&RDMAMemoryManager::PullAllPagesWithoutCloseAsync, this, rmemory).detach();
