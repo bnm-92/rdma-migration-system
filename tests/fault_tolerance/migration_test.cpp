@@ -166,38 +166,11 @@ int main(int argc, char** argv) {
         RDMAMemory* rdma_memory  = nullptr;
         while((rdma_memory = manager->PollForTransfer()) == nullptr) {
         }
-        LogInfo("got memory %p", rdma_memory->vaddr);
+        LogInfo("got memory %p from %d", rdma_memory->vaddr, rdma_memory->pair);
+        manager->Pull(rdma_memory->vaddr, rdma_memory->size, rdma_memory->pair);
         manager->close(rdma_memory->vaddr, rdma_memory->size, rdma_memory->pair);
     }
 
     while(1){}
-
-    // void* one = manager.allocate(1024*1024, 0);
-    // if(one != nullptr) {
-    //     printf("one succeeded\n");
-    // } else {
-    //     printf("one failed\n");
-    // }
-    // void* two = manager.allocate(1024*1024, 1);
-    // if(two != nullptr) {
-    //     printf("two succeeded\n");
-    // } else {
-    //     printf("two failed\n");
-    // }
-
-    // std::vector<std::map<std::string, std::string>> res = manager.coordinator.GetPartitionsForProcess(server_id);
-    // for (auto x : res) {
-    //     for (auto it : x)
-    //         std::cout << it.first << " " << it.second << std::endl;
-    // }
-
-    // manager.deallocate(1);
-
-    // res = manager.coordinator.GetPartitionsForProcess(server_id);
-    // for (auto x : res) {
-    //     for (auto it : x)
-    //         std::cout << it.first << " " << it.second << std::endl;
-    // }
-
     return 0;
 }

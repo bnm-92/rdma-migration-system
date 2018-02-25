@@ -369,6 +369,8 @@ void* RDMAMemoryManager::accept(void* v_addr, size_t size, int source, int64_t c
         return nullptr;
     }
     
+    this->UpdatePair(mem, source);
+
     LogInfo("registering memory");
     this->coordinator.getServer(source, conn_id)->register_memory(this->coordinator.connections[source],v_addr, size, false);
     LogInfo("sending accept");
