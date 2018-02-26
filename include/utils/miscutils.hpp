@@ -85,31 +85,22 @@ public:
         if (started) {
             throw std::logic_error("start() called on already started timer!");
         }
-        int error = gettimeofday(&begin_st, NULL);
-        if (error) {
-            throw std::runtime_error("gettimeofday failed!");
-        }
+        begin_st = std::chrono::high_resolution_clock::now();
         started = true;
     }
     void stop() {
         if (stopped or not started) {
             throw std::logic_error("stop() called on a stopped or not-started timer!");
         }
-        int error = gettimeofday(&end_st, NULL);
-        if (error) {
-            throw std::runtime_error("gettimeofday failed!");
-        }
+        end_st = std::chrono::high_resolution_clock::now();
+        
         stopped = true;
-        double elapsed = \
-            (end_st.tv_usec - begin_st.tv_usec)
-            + ((end_st.tv_sec - begin_st.tv_sec) * 1000000.0);
+        double elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(p1 - p0).count();
         times.push_back(elapsed);
         this->reset();
     }
     double get_duration_usec() {
-        double elapsed = \
-            (end_st.tv_usec - begin_st.tv_usec)
-            + ((end_st.tv_sec - begin_st.tv_sec) * 1000000.0);
+        double elapsed = std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count();
         return elapsed;
     }
 
@@ -125,8 +116,8 @@ public:
 private:
     bool started;
     bool stopped;
-    struct timeval begin_st;
-    struct timeval end_st;
+    std::chrono::high_resolution_clock::time_point begin_st;
+    std::chrono::high_resolution_clock::time_point end_st;
     std::vector<double> times;
 
 };
@@ -141,26 +132,18 @@ public:
         if (started) {
             throw std::logic_error("start() called on already started timer!");
         }
-        int error = gettimeofday(&begin_st, NULL);
-        if (error) {
-            throw std::runtime_error("gettimeofday failed!");
-        }
+        begin_st = std::chrono::high_resolution_clock::now();
         started = true;
     }
     void stop() {
         if (stopped or not started) {
             throw std::logic_error("stop() called on a stopped or not-started timer!");
         }
-        int error = gettimeofday(&end_st, NULL);
-        if (error) {
-            throw std::runtime_error("gettimeofday failed!");
-        }
+        end_st = std::chrono::high_resolution_clock::now();
         stopped = true;
     }
     double get_duration_usec() {
-        double elapsed = \
-            (end_st.tv_usec - begin_st.tv_usec)
-            + ((end_st.tv_sec - begin_st.tv_sec) * 1000000.0);
+        double elapsed = std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count();
         return elapsed;
     }
 
@@ -172,9 +155,8 @@ public:
 private:
     bool started;
     bool stopped;
-    struct timeval begin_st;
-    struct timeval end_st;
-
+    std::chrono::high_resolution_clock::time_point begin_st;
+    std::chrono::high_resolution_clock::time_point end_st;
 };
 
 static TestTimer timer;
