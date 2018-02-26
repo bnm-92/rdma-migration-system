@@ -19,7 +19,7 @@
 /**
  * enables demand paging and sets up pages and sigsegv handler
 */
-#define PAGING 1
+#define PAGING 0
 
 /**
  * enable fault tolerance
@@ -95,12 +95,12 @@ public:
         end_st = std::chrono::high_resolution_clock::now();
         
         stopped = true;
-        double elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(p1 - p0).count();
+        double elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end_st - begin_st).count();
         times.push_back(elapsed);
         this->reset();
     }
     double get_duration_usec() {
-        double elapsed = std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count();
+        double elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end_st - begin_st).count();
         return elapsed;
     }
 
@@ -143,7 +143,7 @@ public:
         stopped = true;
     }
     double get_duration_usec() {
-        double elapsed = std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count();
+        double elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end_st - begin_st).count();
         return elapsed;
     }
 

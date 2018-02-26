@@ -1,3 +1,4 @@
+#include "distributed-allocator/RDMAMemory.hpp"
 #include "distributed-allocator/RDMAMemNode.hpp"
 
 /*

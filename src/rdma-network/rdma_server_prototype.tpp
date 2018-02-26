@@ -131,7 +131,7 @@ void RDMAServerPrototype::send_prepare(
 
 #if FAULT_TOLERANT
 inline
-void RDMAServerPrototype::send_prepare(uintptr_t conn_id, 
+int RDMAServerPrototype::send_prepare(uintptr_t conn_id, 
     void* start_addr, size_t len, char* client_id, size_t client_id_size) {
     std::lock_guard<std::mutex> guard(user_mutex);
     struct rdma_connection* conn = (struct rdma_connection*)conn_id;
@@ -146,11 +146,9 @@ void RDMAServerPrototype::send_prepare(uintptr_t conn_id,
     rdma_msg.region_info.rkey = conn->registrations[start_addr]->rkey;
     memcpy(rdma_msg.data, client_id, client_id_size);
     rdma_msg.data_size = client_id_size;
-
-    // Send the message.
-    post_rdma_send(conn, &rdma_msg, NULL);
-
     LogInfo("RDMAServerPrototype::send prepare message to client");
+    // Send the message.
+    return post_rdma_send(conn, &rdma_msg, NULL);
 }
 
 
@@ -207,7 +205,7 @@ void RDMAServerPrototype::send_decline(
 }
 
 inline
-void RDMAServerPrototype::send_accept(
+int RDMAServerPrototype::send_accept(
     uintptr_t conn_id, void* start_addr, size_t len) {
     std::lock_guard<std::mutex> guard(user_mutex);
     struct rdma_connection* conn = (struct rdma_connection*)conn_id;
@@ -222,8 +220,8 @@ void RDMAServerPrototype::send_accept(
     rdma_msg.data_size = 0;
 
     // Send the message.
-    post_rdma_send(conn, &rdma_msg, NULL);
     LogInfo("RDMAServerPrototype::send accept message to client");
+    return post_rdma_send(conn, &rdma_msg, NULL);
 }
 
 inline
@@ -1112,7 +1110,7 @@ void RDMAServerPrototype::post_rdma_receive(struct rdma_connection* conn) {
 }
 
 inline
-void RDMAServerPrototype::post_rdma_send(
+int RDMAServerPrototype::post_rdma_send(
     struct rdma_connection* conn, struct rdma_message* msg, sem_t* sem
 ) {
     // Create the work context.
@@ -1149,7 +1147,7 @@ void RDMAServerPrototype::post_rdma_send(
     // If a work request fails, it will be returned here.
     struct ibv_send_wr* bad_wr;
 
-    ASSERT_ZERO(ibv_post_send(conn->rdma_socket->qp, &send_request, &bad_wr));
+    return ibv_post_send(conn->rdma_socket->qp, &send_request, &bad_wr);
 }
 
 inline

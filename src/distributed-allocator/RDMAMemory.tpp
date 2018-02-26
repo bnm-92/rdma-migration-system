@@ -337,17 +337,6 @@ int RDMAMemoryManager::Prepare(void* v_addr, size_t size, int destination) {
     return 0;
 }
 
-inline
-int RDMAMemoryManager::prepare(void* v_addr, int destination){
-    LogAssert(memory_map.find(v_addr) != memory_map.end(), "memory not part of memory map");
-    uintptr_t conn_id = this->coordinator.connections[destination];
-    size_t size = memory_map[v_addr]->size;
-    this->UpdatePair(v_addr, destination);
-    this->register_memory(v_addr, size, destination);
-    this->coordinator.getServer(destination, conn_id)->send_prepare(conn_id, v_addr, size);
-    return 0;
-}
-
 /*
     prior to this call the user should wait for the queue message for prepare
     and should be able to allocate and register the required memory address 
@@ -374,7 +363,10 @@ void* RDMAMemoryManager::accept(void* v_addr, size_t size, int source, int64_t c
     LogInfo("registering memory");
     this->coordinator.getServer(source, conn_id)->register_memory(this->coordinator.connections[source],v_addr, size, false);
     LogInfo("sending accept");
-    this->coordinator.getServer(source, conn_id)->send_accept(conn_id, mem, size);
+    if (this->coordinator.getServer(source, conn_id)->send_accept(conn_id, mem, size) != 0) {
+        this->deallocate(client_id);
+        return nullptr;
+    }
    
     return mem;
 }
@@ -412,7 +404,7 @@ int RDMAMemoryManager::Transfer(void* v_addr, size_t size, int destination){
         auto x = memory_map.find(v_addr);
         LogAssert(x != memory_map.end(), "could not find memory in allocated list");
 
-        RDMAMemory* rmemory = x->second;
+        rmemory = x->second;
     #endif
 
     rmemory->owner = destination;
@@ -784,6 +776,7 @@ void RDMAMemoryManager::poller_thread_method() {
     }
 }
 
+#if FAULT_TOLERANT
 std::vector<int64_t> RDMAMemoryManager::getLocalSegmentsList(){
     std::vector<int64_t> vec;
     for (auto x : local_segments) {
@@ -794,6 +787,7 @@ std::vector<int64_t> RDMAMemoryManager::getLocalSegmentsList(){
 
     return vec;
 }
+#endif
 
 inline
 RDMAMemory* RDMAMemoryManager::PollForAccept() {

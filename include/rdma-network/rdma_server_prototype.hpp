@@ -79,12 +79,12 @@ public:
     void send_prepare(uintptr_t conn_id, void* addr, size_t len);
 
     #if FAULT_TOLERANT
-    void send_prepare(uintptr_t conn_id, void* addr, size_t len, char* client_id, size_t client_id_size);
+    int send_prepare(uintptr_t conn_id, void* addr, size_t len, char* client_id, size_t client_id_size);
     void getPartitionList(uintptr_t conn_id);
     void sendPartitionList(uintptr_t conn_id, std::string str);
     #endif
 
-    void send_accept(uintptr_t conn_id, void* addr, size_t len);
+    int send_accept(uintptr_t conn_id, void* addr, size_t len);
     
     void send_decline(uintptr_t conn_id, void* addr, size_t len);
 
@@ -260,7 +260,7 @@ protected:
     // sem_t, if not null, will be smashed when the send is done.
     // See struct rdma_message for more details.
     // (The message will be copied out before being sent.)
-    void post_rdma_send(struct rdma_connection*, struct rdma_message*, sem_t*);
+    int post_rdma_send(struct rdma_connection*, struct rdma_message*, sem_t*);
 
     // Post an RDMA read.
     // sem_t, if not null, will be signalled when the send is done.

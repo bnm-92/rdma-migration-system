@@ -143,7 +143,6 @@ private:
     int pull(void* v_addr);
     int push(void* v_addr);
 
-    int prepare(void* v_addr, int destination);
     void* accept(void* v_addr, size_t size, int source);
     void* accept(void* v_addr, size_t size, int source, int64_t client_id);
     int transfer(void* v_addr, size_t size, int destination);
