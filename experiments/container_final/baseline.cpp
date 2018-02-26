@@ -7,9 +7,9 @@
 #include <random>
 #include <chrono>
 
-#include "mempool.hpp"
-#include "rdma_vector.hpp"
-#include "rdma_unordered_map.hpp"
+#include "distributed-allocator/mempool.hpp"
+#include "c++-containers/rdma_vector.hpp"
+#include "c++-containers/rdma_unordered_map.hpp"
 
 int main(int argc, char* argv[]) {
     if (argc < 4) {

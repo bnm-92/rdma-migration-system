@@ -19,12 +19,12 @@
 /**
  * enables demand paging and sets up pages and sigsegv handler
 */
-#define PAGING 0
+#define PAGING 1
 
 /**
  * enable fault tolerance
 */
-#define FAULT_TOLERANT 1
+#define FAULT_TOLERANT 0
 
 
 /**
