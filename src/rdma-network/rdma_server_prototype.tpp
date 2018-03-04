@@ -698,7 +698,7 @@ void RDMAServerPrototype::on_completion(struct ibv_wc* work_completion) {
 
     if (work_ctx->call_back != NULL) {
         work_ctx->call_back(work_ctx->data);
-        free(work_ctx->data);
+        // free(work_ctx->data);
     }
     delete work_ctx;
 
@@ -1002,8 +1002,8 @@ void RDMAServerPrototype::build_queue_pair(struct rdma_cm_id* rdma_socket) {
     // Flag for a reliable connection.
     qp_attr.qp_type = IBV_QPT_RC;
     // Size of the queues (arbitrary I think?)
-    qp_attr.cap.max_send_wr = 10;
-    qp_attr.cap.max_recv_wr = 10;
+    qp_attr.cap.max_send_wr = 1024;
+    qp_attr.cap.max_recv_wr = 1024;
     // Max number of SGEs per work request (also arbitrary?)
     qp_attr.cap.max_send_sge = 1;
     qp_attr.cap.max_recv_sge = 1;
@@ -1188,9 +1188,8 @@ void RDMAServerPrototype::post_rdma_read(
     send_request.wr_id = (uintptr_t)work_ctx;
 
     struct ibv_send_wr* bad_wr;
-
-    ASSERT_ZERO(ibv_post_send(
-        conn->rdma_socket->qp, &send_request, &bad_wr));
+    int rc = ibv_post_send(conn->rdma_socket->qp, &send_request, &bad_wr);
+    LogAssert(rc == 0, "async posting failure bcz %s", strerror(rc));
 }
 
 inline

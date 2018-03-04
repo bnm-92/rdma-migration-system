@@ -461,8 +461,10 @@ void RDMAMemoryManager::on_transfer(void* v_addr, size_t size, int source) {
         #endif
 
     #else
+        // timer.start();
         this->Pull(v_addr, size, source);
         UpdateState(v_addr, RDMAMemory::State::Clean);
+        // timer.stop();
     #endif
 }
 
@@ -479,6 +481,14 @@ void RDMAMemoryManager::close(void* v_addr, size_t size, int source) {
     #if FAULT_TOLERANT
         int64_t app_id = local_segments[v_addr]->application_id;
         this->coordinator.cleanMemorySegment(app_id);
+    #endif
+
+    #if PREFETCHING && !FAULT_TOLERANT
+        auto x = this->memory_map.find(v_addr);
+        LogAssert(x != memory_map.end(), "could not find RDMA memory at specified location");
+        
+        RDMAMemory* mem = x->second;
+        this->PullAllPagesWithoutClose(mem);
     #endif
 
     UpdateState(v_addr, RDMAMemory::State::Clean);
@@ -854,6 +864,7 @@ void RDMAMemoryManager::MarkPageLocal(RDMAMemory* memory, void* address, size_t 
 
 inline 
 void MarkPageLocalCB(void* data) {
+    void* data_ = data;
     RDMAMemory* memory = (RDMAMemory*)(*((void**)data));
     data = (void*)((char*)data + sizeof(RDMAMemory*));
 
@@ -872,7 +883,7 @@ void MarkPageLocalCB(void* data) {
     (*x).fetch_sub(1);
 
     memory->pages.setPageState(address, PageState::Local);
-    free(data);
+    free(data_);
 }
 
 inline

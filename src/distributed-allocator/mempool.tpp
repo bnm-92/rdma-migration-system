@@ -10,7 +10,7 @@ MemoryPool::MemoryPool(void* pool_addr, size_t pool_size)
 inline
 void* MemoryPool::allocate(size_t bytes) noexcept {
     
-    LogInfo("allocate(bytes = %p) called on %p", (void*) bytes, this);
+    // LogInfo("allocate(bytes = %p) called on %p", (void*) bytes, this);
 
     // For now, we'll use the next free address.
     void* result = unused_past;

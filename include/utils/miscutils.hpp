@@ -53,7 +53,7 @@
  * max_async_pending operations
 */
 
-static int max_async_pending = 40;
+static int max_async_pending = 1;
 #if FAULT_TOLERANT || PAGING
 class RDMAMemoryManager; // forward decleration
 static RDMAMemoryManager* manager = nullptr;
@@ -99,6 +99,7 @@ public:
         times.push_back(elapsed);
         this->reset();
     }
+    
     double get_duration_usec() {
         double elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end_st - begin_st).count();
         return elapsed;
@@ -144,6 +145,11 @@ public:
     }
     double get_duration_usec() {
         double elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end_st - begin_st).count();
+        return elapsed;
+    }
+
+    double get_duration_nsec() {
+        double elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end_st - begin_st).count();
         return elapsed;
     }
 
