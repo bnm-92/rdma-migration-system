@@ -19,10 +19,7 @@ int main(int argc, char* argv[]) {
     }
 
     size_t size = (size_t)atoi(argv[2]);
-    
-    // RDMAMemoryManager* memory_manager = new RDMAMemoryManager(argv[1], 0);
     using String = std::basic_string<char, std::char_traits<char>, PoolBasedAllocator<char>>;
-    // manager = memory_manager;
 
     //key/val 8 bytes + 128 bytes
     int64_t key = 0;
@@ -50,51 +47,52 @@ int main(int argc, char* argv[]) {
         key++;
     }
 
-
-    //warmup ~ 3 million access
-    // printf("warming up\n");
     int access = 0;
     String valr;
-    while(access < num_entries) {
-        valr = map.at(access);
-        access++;
-    }
-
-    access = 0;
-    while(access < 3000000) {
-        valr = map.at(distr(generator));
-        access++;
-    }
-
-    access = 0;
-    int64_t total_access = 0;
 
     std::vector<double> times;        
-    while(total_access < 500000) {
+    std::vector<std::vector<double>> bins;
+    std::vector<int> bins_for_calls;
+
+    int bin = 0;
+    bins.push_back(*(new std::vector<double>()));
+    bins_for_calls.push_back(0);
+
+
+    double time_interval = 1000; // in micro seconds
+    double time_passed = 1000; //starting from the first one
+    auto start = std::chrono::high_resolution_clock::now();
+
+    while(true) {
+        auto end = std::chrono::high_resolution_clock::now();
+        
+        if (std::chrono::duration_cast<std::chrono::seconds>(end - start).count() > 5) {
+            break;
+        } else if (std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() > time_passed) {
+            //bin it
+            bins.push_back(*(new std::vector<double>()));
+            bins_for_calls.push_back(0);
+            bin++;
+            time_passed += time_interval; 
+            double x = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+            times.push_back(x);
+        }
+
         auto s1 = std::chrono::high_resolution_clock::now();
         valr = map.at(distr(generator));
         auto e1 = std::chrono::high_resolution_clock::now();
-        times.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(e1 - s1).count());
-        access++;
-        total_access++;
+
+        bins[bin].push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(e1 - s1).count());
+
     }
 
-    std::vector<std::vector<double>> bins;
-    for (unsigned int i=0; i<times.size(); i++) {
-        std::vector<double> bin;
-        for (int j=0; j<1000; j++) {
-            bin.push_back(times.at(i));
-            i++;
-            if(i >= times.size()) {
-                break;
-            }
-        }
-        bins.push_back(bin);
-    }
+
+    printf("Container_size, %lu,key_space, %d\n",size,num_entries);
 
     // this is the pulls
     std::vector<double> mean_list;
     std::vector<double> nfivep_list;
+    std::vector<double> max_list;
     
     for (std::vector<double> bin : bins) {
         //sum of each bin
@@ -105,17 +103,17 @@ int main(int argc, char* argv[]) {
         double mean = sum/((double)bin.size());
         mean_list.push_back(mean);
         std::sort(bin.begin(), bin.end());
+        max_list.push_back(bin.at(bin.size()-1));
 
         double nfivep = bin[((bin.size()*95)/100)];
         nfivep_list.push_back(nfivep);
     }
 
-
     // //final vals
-    // printf("request access, mean_latency,95 percentile,\n");
-    for (unsigned int i=0; i<mean_list.size(); i++) {
-        printf(" %d, %f, %f,\n", i, (double) (mean_list.at(i)/1000), (double) (nfivep_list.at(i)/1000) );
-    }        
+    printf("time in milli second, mean_latency,95 percentile, throuhgput\n");
+    for (unsigned int i=0; i< mean_list.size() - 1; i++) {
+        printf(" %f, %f, %f, %d, %d\n", (double) (times[i]/1000), (double) (mean_list.at(i)/1000), (double) (nfivep_list.at(i)/1000), (int)bins[i].size(), bins_for_calls.at(i));
+    }
     
     return 0;
 }

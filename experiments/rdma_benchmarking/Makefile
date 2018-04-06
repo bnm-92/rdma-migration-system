@@ -1,7 +1,7 @@
 .PHONY: clean
 
 CXX = g++
-CXXFLAGS := -Wall -g -rdynamic -std=c++11 -MMD -I../../include/utils -I../../include/rdma-network -I../../src/rdma-network
+CXXFLAGS := -Wall -g -rdynamic -std=c++11 -MMD -I../../include/ -I../../src/
 
 LDFLAGS := ${LDFLAGS} -lrdmacm -libverbs -lpthread
 # -std=c++11: Compile with the C++11 standard.

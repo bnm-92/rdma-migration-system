@@ -11,9 +11,9 @@ Give it a message, and it when clients connect, clients will RDMA-read the messa
 #include <iostream>
 #include <utility>
 
-#include "rdma_server.hpp"
-#include "rdma_client.hpp"
-#include "miscutils.hpp"
+#include "rdma-network/rdma_server.hpp"
+#include "rdma-network/rdma_client.hpp"
+#include "utils/miscutils.hpp"
 #include <sys/mman.h>
 
 #include <errno.h>
@@ -37,7 +37,9 @@ int main(int argc, char** argv) {
         uintptr_t conn_id = rdma_server->accept();
         size_t data_size = atoi(argv[2]);
         
-        for (int i=1; i<20; i++) {
+        printf("memory_size, registration time, deregistration time\n");
+
+        for (int i=1; i<22; i++) {
             data_size = data_size*2; 
             void* data_addr = mmap(0, data_size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS,-1,0); 
 
@@ -51,13 +53,18 @@ int main(int argc, char** argv) {
             rdma_server->register_memory(conn_id, data_addr, data_size, false);
             t.stop();
 
+            TestTimer t2 = TestTimer();
+            t2.start();
+            rdma_server->deregister_memory(conn_id, data_addr);
+            t2.stop();
 
-            printf("time taken, %f, size, %lu\n", t.get_duration_usec(), data_size);
+
+            printf("%lu, %f, %f\n", data_size, t.get_duration_usec(), t2.get_duration_usec() );
             fflush(stdout);
         }
         rdma_server->done(conn_id);
     } else {
-        const char* addr = "10.10.0.5";
+        const char* addr = "10.30.0.10";
         const char* port = "5000";
 
 
