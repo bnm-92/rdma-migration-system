@@ -23,8 +23,8 @@ public:
     // Note: This also creates a default PoolBasedAllocator (which is
     // more or less the same as an std::allocator) which will get wiped away
     // upon instantiation.
-    RDMAVector(RDMAMemoryManager* manager)
-    : RDMAContainerBase<T>(manager) {}
+    RDMAVector(RDMAMemoryManager* manager, int64_t id)
+    : RDMAContainerBase<T>(manager, id) {}
 
     // Instantiator.
     // Usage: Instead of calling

@@ -39,8 +39,8 @@ public:
     // Note: This also creates a default PoolBasedAllocator (which is
     // more or less the same as an std::allocator) which will get wiped away
     // upon instantiation.
-    RDMAUnorderedMap(RDMAMemoryManager* manager)
-    : RDMAContainerBase<ValueT>(manager) {}
+    RDMAUnorderedMap(RDMAMemoryManager* manager, int64_t id)
+    : RDMAContainerBase<ValueT>(manager, id) {}
 
     // Instantiator.
     // Usage: Instead of calling

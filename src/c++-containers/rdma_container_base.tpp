@@ -5,20 +5,31 @@
 
 template <class T>
 inline
-RDMAContainerBase<T>::RDMAContainerBase(RDMAMemoryManager* manager) : 
+RDMAContainerBase<T>::RDMAContainerBase(RDMAMemoryManager* manager, int64_t id) : 
     manager(manager),
     rdma_memory(nullptr),
-    mempool(nullptr){}
+    mempool(nullptr){
+        this->id = id;
+    }
 
 template <class T>
 inline
-RDMAContainerBase<T>::~RDMAContainerBase() {}
+RDMAContainerBase<T>::~RDMAContainerBase() {
+    if (mempool->addr) {
+        #if FAULT_TOLERANT
+            manager->deallocate(id);
+        #else 
+            manager->deallocate(mempool->addr);
+        #endif
+    }
+    
+}
 
 template <class T>
 inline
 void RDMAContainerBase<T>::set_up_allocator() {
     // allocate using the manager
-    void* memory = manager->allocate(DEFAULT_POOL_SIZE);
+    void* memory = manager->allocate(DEFAULT_POOL_SIZE, id);
 
     /*
         set up pool information within the memory

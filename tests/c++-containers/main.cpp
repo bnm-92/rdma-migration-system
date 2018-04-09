@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
 
 
     if (id == 0) {
-        RDMAUnorderedMap<int, int> map(memory_manager);
+        RDMAUnorderedMap<int, int> map(memory_manager, 1);
         map.instantiate();
         map[0] = 0;
         map[1] = 1;
@@ -119,7 +119,7 @@ int main(int argc, char* argv[]) {
         // std::cerr << std::endl;
         // vec.Close();
 
-        RDMAUnorderedMap<int, int> map(memory_manager);
+        RDMAUnorderedMap<int, int> map(memory_manager, 2);
         while(!map.PollForTransfer()) {}
 
         map.remote_instantiate();
