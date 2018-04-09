@@ -5,11 +5,17 @@
 
 template <class T>
 inline
+#if FAULT_TOLERANT
 RDMAContainerBase<T>::RDMAContainerBase(RDMAMemoryManager* manager, int64_t id) : 
+#else
+RDMAContainerBase<T>::RDMAContainerBase(RDMAMemoryManager* manager) : 
+#endif
     manager(manager),
     rdma_memory(nullptr),
     mempool(nullptr){
-        this->id = id;
+        #if FAULT_TOLERANT
+            this->id = id;
+        #endif
     }
 
 template <class T>
@@ -29,8 +35,11 @@ template <class T>
 inline
 void RDMAContainerBase<T>::set_up_allocator() {
     // allocate using the manager
-    void* memory = manager->allocate(DEFAULT_POOL_SIZE, id);
-
+    #if FAULT_TOLERANT
+        void* memory = manager->allocate(DEFAULT_POOL_SIZE, id);
+    #else
+        void* memory = manager->allocate(DEFAULT_POOL_SIZE);
+    #endif
     /*
         set up pool information within the memory
         we need the pointer to the pool to reside in the pool for binding access

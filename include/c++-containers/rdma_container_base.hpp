@@ -19,7 +19,11 @@ public:
         Standard constructor, which attaches a RDMA Memory Manager to this
         container. Does not instantiate anything else yet.
     */
-    RDMAContainerBase(RDMAMemoryManager* manager, int64_t id);
+    #if FAULT_TOLERANT
+        RDMAContainerBase(RDMAMemoryManager* manager, int64_t id);
+    #else
+        RDMAContainerBase(RDMAMemoryManager* manager);
+    #endif
     ~RDMAContainerBase();
 
     /*
@@ -116,11 +120,12 @@ protected:
     virtual void* get_container_address() = 0;
     virtual void set_container_address(void* container_addr) = 0;
 
-
+#if FAULT_TOLERANT
     /*
         Unique container id specified at instantiation by the client
     */
     int64_t id;
+#endif
 };
 
 #include "c++-containers/rdma_container_base.tpp"
