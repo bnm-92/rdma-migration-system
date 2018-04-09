@@ -3,7 +3,12 @@
 
 inline
 RDMAMemNode::RDMAMemNode(std::string config_path, int server_id): 
-cfg(), server(nullptr), zk(nullptr) {
+cfg(), server(nullptr)
+#if FAULT_TOLERANT
+, zk(nullptr) {
+#else
+    {
+#endif
     //initialize vars
     this->server_id = server_id;
     server = new RDMAServer();

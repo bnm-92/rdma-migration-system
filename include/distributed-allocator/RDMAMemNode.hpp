@@ -4,8 +4,9 @@
 #include "rdma-network/rdma_server.hpp"
 #include "rdma-network/rdma_client.hpp"
 #include "utils/miscutils.hpp"
+#if FAULT_TOLERANT
 #include "zookeeper/zookeeper.hpp"
-
+#endif
 #include <cstdint>
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,10 +44,9 @@ public:
     std::unordered_map<uintptr_t, RDMAClient*> clients;
 
     std::unordered_map<int, uintptr_t> connections;
-
-    ZooKeeper *zk;
-
     #if FAULT_TOLERANT
+    
+    ZooKeeper *zk;
     
     sem_t sem_get_partition_list;
     std::string partition_list;
