@@ -23,8 +23,13 @@ public:
     // Note: This also creates a default PoolBasedAllocator (which is
     // more or less the same as an std::allocator) which will get wiped away
     // upon instantiation.
+#if FAULT_TOLERANT
     RDMAVector(RDMAMemoryManager* manager, int64_t id)
     : RDMAContainerBase<T>(manager, id) {}
+#else
+    RDMAVector(RDMAMemoryManager* manager)
+    : RDMAContainerBase<T>(manager) {}
+#endif
 
     // Instantiator.
     // Usage: Instead of calling

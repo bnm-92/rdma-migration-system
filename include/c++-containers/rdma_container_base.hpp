@@ -76,6 +76,7 @@ public:
         configurations
     */
     void SetContainerSize(size_t size);
+    void SetPageSize(size_t size);
 
 protected:
     /*

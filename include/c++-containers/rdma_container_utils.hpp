@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "distributed-allocator/pool_based_allocator.hpp"
+#include "c++-containers/pool_based_allocator.hpp"
 
 // The type for std::strings that are custom allocated with our RDMA
 // compatible allocator.
