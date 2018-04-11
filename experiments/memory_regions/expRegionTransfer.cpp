@@ -23,10 +23,12 @@ int main(int argc, char* argv[]) {
     int id = atoi(argv[2]);
     size_t size = atoi(argv[3]);
     int iterations = atoi(argv[4]);
-    
+    #if PAGING
     manager = new RDMAMemoryManager(argv[1], id);
     initialize();
-
+    #else 
+    RDMAMemoryManager *manager = new RDMAMemoryManager(argv[1], id);
+    #endif
     MultiTimer t = MultiTimer();
     std::vector<void*> addrs;
 
