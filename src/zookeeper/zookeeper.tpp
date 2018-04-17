@@ -9,6 +9,7 @@
 
 #include <zookeeper/zookeeper.hpp>
 
+inline
 ZooKeeper::ZooKeeper(const std::string& servers,
 const int64_t& sessionTimeout, 
 FILE * file) : 
@@ -38,27 +39,33 @@ FILE * file) :
     while(!this->connected.load());        
 }
 
+inline
 ZooKeeper::~ZooKeeper() {}     
 
+inline
 void ZooKeeper::Close() {
     zookeeper_close(zh);
     zh = nullptr;
 }
 
+inline
 void ZooKeeper::SetDebugLevel(ZooLogLevel logLevel) {
     zoo_set_debug_level(logLevel);
 }
 
+inline
 int ZooKeeper::getState() {
     if(zh != nullptr)
         return zoo_state(zh);
     return 0;
 }
 
+inline
 int64_t ZooKeeper::getSessionId() {
     return zoo_client_id(zh)->client_id;
 }
 
+inline
 int64_t ZooKeeper::getSessionTimeout() const {
     // ZooKeeper server uses int representation of milliseconds for
     // session timeouts.
@@ -67,6 +74,7 @@ int64_t ZooKeeper::getSessionTimeout() const {
     return zoo_recv_timeout(zh);
 }
 
+inline
 int ZooKeeper::create(
     const std::string& path,
     const std::string& data,
@@ -90,18 +98,22 @@ int ZooKeeper::create(
     return rc;
 }
 
+inline
 int ZooKeeper::remove(const std::string& path, int version) {
     return zoo_delete(this->zh, path.c_str(), version);
 }
 
+inline
 int ZooKeeper::exists(const std::string& path, Stat* stat) {
     return zoo_exists(this->zh, path.c_str(), false, stat);
 }
 
+inline
 int ZooKeeper::wexists(const std::string& path, Stat* stat, watcher_fn watcher, void* watcherCtx){
     return zoo_wexists(this->zh, path.c_str(), watcher, watcherCtx, stat);
 }
 
+inline
 int ZooKeeper::get(
     const std::string& path,
     std::string* result,
@@ -115,6 +127,7 @@ int ZooKeeper::get(
         return rc;
 }
 
+inline
 int ZooKeeper::wget(const std::string& path, std::string* result, Stat* stat, watcher_fn watcher, void* watcherCtx) {
     int buflen = BUFLEN;
     *result = std::string(buflen, '\0');
@@ -124,6 +137,7 @@ int ZooKeeper::wget(const std::string& path, std::string* result, Stat* stat, wa
     return rc;
 }
 
+inline
 int ZooKeeper::getChildren(
     const std::string& path,
     std::vector<std::string>* results) {
@@ -139,7 +153,7 @@ int ZooKeeper::getChildren(
     return rc;
 }
 
-
+inline
 int ZooKeeper::wgetChildren(const std::string& path, std::vector<std::string>* results, watcher_fn watcher, void* watcherCtx) {
     String_vector sv;
     int rc = zoo_wget_children(this->zh, path.c_str(), watcher, watcherCtx, &sv);
@@ -154,6 +168,7 @@ int ZooKeeper::wgetChildren(const std::string& path, std::vector<std::string>* r
     return rc;
 }
 
+inline
 int ZooKeeper::set(const std::string& path, const std::string& data, int version) {
     return zoo_set(this->zh, path.c_str(), 
                     data.data(),
@@ -161,10 +176,12 @@ int ZooKeeper::set(const std::string& path, const std::string& data, int version
                     version);
 }
 
+inline
 std::string ZooKeeper::message(int code) const {
       return std::string(zerror(code));
 }
 
+inline
 bool ZooKeeper::retryable(int code) {
   switch (code) {
     case ZCONNECTIONLOSS:
@@ -204,6 +221,7 @@ bool ZooKeeper::retryable(int code) {
   }
 }
 
+inline
 std::string ZooKeeper::toString(int code) {
   switch (code) {
     case ZCONNECTIONLOSS:

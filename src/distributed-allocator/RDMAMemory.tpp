@@ -138,6 +138,7 @@ void* RDMAMemoryManager::allocate(size_t size, int64_t application_id){
     return nullptr;
 }
 
+inline
 int RDMAMemoryManager::deallocate(int64_t application_id) {
     //this memory needs to be in memory map
     LogInfo("deallocation");
@@ -787,6 +788,7 @@ void RDMAMemoryManager::poller_thread_method() {
 }
 
 #if FAULT_TOLERANT
+inline
 std::vector<int64_t> RDMAMemoryManager::getLocalSegmentsList(){
     std::vector<int64_t> vec;
     for (auto x : local_segments) {

@@ -314,6 +314,7 @@ private:
         your code
     }
 */ 
+inline
 void global_watch_CB (zhandle_t *zzh, int type, int state, const char *path, void* context) {
     ZooKeeper *zk = (ZooKeeper*)context;
     if (type == ZOO_SESSION_EVENT) {

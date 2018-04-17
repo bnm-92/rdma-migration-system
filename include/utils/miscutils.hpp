@@ -387,6 +387,7 @@ private:
 
 #if FAULT_TOLERANT
 
+inline
 std::map<std::string, std::string> ZStoMAP(std::string input) {
     int len = input.size();
     int start = 0;
@@ -421,6 +422,7 @@ std::map<std::string, std::string> ZStoMAP(std::string input) {
     return res;
 }
 
+inline
 std::string MAPtoZS(std::map<std::string, std::string> map) {
     std::string res;
     for(auto it = map.begin(); it != map.end(); it++) {
@@ -432,6 +434,7 @@ std::string MAPtoZS(std::map<std::string, std::string> map) {
     return res;
 }
 
+inline
 std::vector<int64_t> ZStoProcessList(std::string str) {
     std::vector<int64_t> res;
     int start = 0;
@@ -454,6 +457,7 @@ std::vector<int64_t> ZStoProcessList(std::string str) {
     return res;
 }
 
+inline
 std::string ProcessListtoZS(std::vector<int64_t> vec) {
     std::string res;
     for(auto it = vec.begin(); it != vec.end(); it++) {

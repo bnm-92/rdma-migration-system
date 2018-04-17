@@ -152,6 +152,7 @@ int RDMAServerPrototype::send_prepare(uintptr_t conn_id,
 }
 
 
+inline
 void RDMAServerPrototype::getPartitionList(uintptr_t conn_id) {
     std::lock_guard<std::mutex> guard(user_mutex);
     struct rdma_connection* conn = (struct rdma_connection*)conn_id;
@@ -165,6 +166,7 @@ void RDMAServerPrototype::getPartitionList(uintptr_t conn_id) {
     LogInfo("RDMAServerPrototype::send get partition list message to pair");
 }
 
+inline
 void RDMAServerPrototype::sendPartitionList(uintptr_t conn_id, std::string str) {
     std::lock_guard<std::mutex> guard(user_mutex);
     struct rdma_connection* conn = (struct rdma_connection*)conn_id;

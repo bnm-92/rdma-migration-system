@@ -130,6 +130,7 @@ int RDMAMemNode::connect_mesh(){
 
 #if FAULT_TOLERANT
 
+inline
 void* RDMAMemNode::getAllocationAddress(size_t size){
     LogInfo("getting an allocation address");
     failed_zk_write:
@@ -156,6 +157,7 @@ void* RDMAMemNode::getAllocationAddress(size_t size){
     return (void*)res;
 }
 
+inline
 int RDMAMemNode::createMemorySegmentNode(void* address, size_t size, int source, int destination, int64_t clientSpecifiedID) {
     std::map<std::string, std::string> segment_map;
     segment_map["address"] = std::to_string((uintptr_t)address);
@@ -176,6 +178,7 @@ int RDMAMemNode::createMemorySegmentNode(void* address, size_t size, int source,
     return 0;
 }
 
+inline
 int RDMAMemNode::updateSegmentDestination(int64_t app_id, int destination) {
     Stat stat;
     std::string result = "";
@@ -200,6 +203,7 @@ int RDMAMemNode::updateSegmentDestination(int64_t app_id, int destination) {
     return 0;
 }
 
+inline
 int RDMAMemNode::cleanMemorySegment(int64_t app_id) {
     Stat stat;
     std::string result = "";
@@ -224,6 +228,7 @@ int RDMAMemNode::cleanMemorySegment(int64_t app_id) {
     return 0;
 }
 
+inline
 int RDMAMemNode::deleteMemorySegment(int64_t app_id, int source) {
     Stat stat;
     std::string result = "";
@@ -249,6 +254,7 @@ int RDMAMemNode::deleteMemorySegment(int64_t app_id, int source) {
     return 0;
 }
 
+inline
 int RDMAMemNode::addToProcessList(int64_t id) {
     LogInfo("adding id to process %ld", id);
     Stat stat;
@@ -270,6 +276,7 @@ int RDMAMemNode::addToProcessList(int64_t id) {
     return 0;
 }
 
+inline
 int RDMAMemNode::removeFromProcessList(int64_t id) {
     LogInfo("removing from process list");
     
@@ -299,6 +306,7 @@ int RDMAMemNode::removeFromProcessList(int64_t id) {
     return 0;
 }
 
+inline
 std::vector<std::map<std::string, std::string>> RDMAMemNode::GetPartitionsForProcess(int64_t process_id) {
     LogInfo("getting partitions for process");
     Stat stat;
@@ -326,6 +334,7 @@ std::vector<std::map<std::string, std::string>> RDMAMemNode::GetPartitionsForPro
     return segment_info;
 }
 
+inline
 std::vector<int64_t> RDMAMemNode::GetLivePartitionsForProcess(int64_t process_id) {
     if(process_id != this->server_id) {
         uintptr_t conn_id = this->connections[process_id];
@@ -344,6 +353,7 @@ std::vector<int64_t> RDMAMemNode::GetLivePartitionsForProcess(int64_t process_id
     return manager->getLocalSegmentsList();
 }
 
+inline
 std::map<std::string, std::string> RDMAMemNode::getMemorySegment(int64_t app_id) {
     Stat stat;
     std::string path = memory_segment_node + "/" + std::to_string(app_id);
