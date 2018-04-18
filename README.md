@@ -73,8 +73,10 @@ for only client library/bindings, simpy do:
 
 
 ## Building
-To run a particular functionality you must use Make in a particular test or experiment
-Running `make` will produce the executables outlined in "test or experiment" folder
+To use the project, simply include the header files required and compile your code
+
+To run a particular test/experiement you must use Make in the  test or experiment by 
+running the associated `make` and then running the executable.
 The executable server must be started in the order specified by the configuration file
 
 ## 1000 ft overview of the codebase
@@ -86,5 +88,7 @@ The codebase is built in modular fashion in include and src
 * **c++-containers:** STL containers that have been built on the migratable memory, currently we support vectors and unordered-maps
 
 ##configurations
+All configurations are can be changed from the /include/utils/miscutils.hpp file.
 * **LOG_LEVEL:** level of log output, ERROR, ASSERTION, WARNING, COMMENT can be asjusted from include/utils/mscutils.hpp
 * **PAGING:** can we switched on with flag set to 1 (0 for no paging)
+* **FAULT TOLERANCE:** adds the fault tolerance functionality in RAMP (The zookeeper dependency is only required if you run with fault tolerance)
