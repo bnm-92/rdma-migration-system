@@ -87,7 +87,7 @@ The codebase is built in modular fashion in include and src
 * **paging:** The paging code to pull in memory on demand or pre-fetch
 * **c++-containers:** STL containers that have been built on the migratable memory, currently we support vectors and unordered-maps
 
-##configurations
+## configurations
 All configurations are can be changed from the /include/utils/miscutils.hpp file.
 * **LOG_LEVEL:** level of log output, ERROR, ASSERTION, WARNING, COMMENT can be asjusted from include/utils/mscutils.hpp
 * **PAGING:** can we switched on with flag set to 1 (0 for no paging)
