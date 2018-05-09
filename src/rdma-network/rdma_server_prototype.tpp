@@ -611,7 +611,7 @@ int RDMAServerPrototype::on_disconnect(struct rdma_cm_id* rdma_socket) {
     LogInfo("Connection ID was : %p", conn);
 
     // Smash the semaphore.
-    // sem_post(conn->disconnection_sem);
+    sem_post(conn->disconnection_sem);
 
     // Delete this connection from our list of connections.
     connections.erase(conn);
