@@ -2,7 +2,7 @@
 
 CXX := g++
 CXXFLAGS := -Wall -g -std=c++11 -MMD -I../../include -I../../include -I../../src/
-LDFLAGS := ${LDFLAGS} -lrdmacm -libverbs -lpthread -lzookeeper_mt
+LDFLAGS := ${LDFLAGS} -lrdmacm -libverbs -lpthread
 
 APPS := test-server test-client test-transfer
 DEPENDS := test-server.d test-client.d test-transfer.d

@@ -611,7 +611,7 @@ int RDMAServerPrototype::on_disconnect(struct rdma_cm_id* rdma_socket) {
     LogInfo("Connection ID was : %p", conn);
 
     // Smash the semaphore.
-    // sem_post(conn->disconnection_sem);
+    sem_post(conn->disconnection_sem);
 
     // Delete this connection from our list of connections.
     connections.erase(conn);
@@ -759,6 +759,7 @@ void RDMAServerPrototype::on_recv_finish(struct ibv_wc* wc) {
         conn->recv_done = true;
         // If both sides have sent DONE, then we can begin disconnecting.
         if (conn->sent_done) {
+            LogInfo("recieving done while having it sent before");
             rdma_disconnect(conn->rdma_socket);
         }
     
@@ -899,6 +900,7 @@ void RDMAServerPrototype::on_send_finish(struct ibv_wc* wc) {
         // And if we've also called done(), do the disconnect.
         conn->sent_done = true;
         if (conn->recv_done) {
+            LogInfo("sending done and received it as well");
             rdma_disconnect(conn->rdma_socket);
         }
 

@@ -19,7 +19,7 @@
 /**
  * enables demand paging and sets up pages and sigsegv handler
 */
-#define PAGING 1
+#define PAGING 0
 
 /**
  * enable fault tolerance
@@ -39,7 +39,7 @@
  * TODO: update to take in a file parameter instead of spitting to stderr stream
 */
 #define DEBUG 1
-#define LEVEL 0
+#define LEVEL 3
 #define LogMessage(Level, SEVERITY, ...) do { if (DEBUG && Level <= LEVEL) {fprintf(stderr, "%s %s:%03u in %s : ", SEVERITY, __FILE__, __LINE__, __FUNCTION__); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); fflush(stderr);}if(Level == 0) {fflush(stderr); /*exit(1);*/}} while(false)
 
 #define LogError(...) LogMessage(0, "ERROR", __VA_ARGS__)
