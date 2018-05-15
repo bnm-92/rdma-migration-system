@@ -6,6 +6,8 @@
 #include <string>
 
 #include "rdma-network/util.hpp"
+#include "rdma-network/rdma_server.hpp"
+
 
 inline
 RDMAServer::RDMAServer() : RDMAServerPrototype() {

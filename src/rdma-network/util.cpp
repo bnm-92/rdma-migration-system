@@ -4,8 +4,8 @@
 #include <cstdio>
 #include <errno.h>
 #include <string.h>
+#include "rdma-network/util.hpp"
 
-inline
 void die(const char* reason) {
     if (errno) {
         fprintf(stderr,
@@ -19,5 +19,4 @@ void die(const char* reason) {
     exit(EXIT_FAILURE);
 
     printf("die called on: %s\n", reason);
-
 }

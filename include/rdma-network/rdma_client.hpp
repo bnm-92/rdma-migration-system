@@ -64,6 +64,4 @@ public:
     static const int TIMEOUT_MS = 500;
 };
 
-#include "rdma-network/rdma_client.tpp"
-
 #endif // __RDMA_CLIENT_HPP__

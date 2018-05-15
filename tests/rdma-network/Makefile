@@ -1,7 +1,7 @@
 .PHONY: clean
 
 CXX := g++
-CXXFLAGS := -Wall -g -std=c++11 -MMD -I../../include -I../../include -I../../src/
+CXXFLAGS := -Wall -g -std=c++11 -MMD -I../../include -I../../include -I../../src/ -L./../../ -lramp
 LDFLAGS := ${LDFLAGS} -lrdmacm -libverbs -lpthread
 
 APPS := test-server test-client test-transfer

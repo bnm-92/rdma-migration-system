@@ -8,6 +8,4 @@ void die(const char* reason);
 #define ASSERT_NONZERO(x) \
     do { if (!(x)) die(#x); } while (0)
 
-#include "rdma-network/util.tpp"
-
 #endif // __UTIL_HPP__

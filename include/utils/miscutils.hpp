@@ -53,7 +53,7 @@
  * max_async_pending operations
 */
 
-static int max_async_pending = 1;
+// static int max_async_pending = 1;
 #if FAULT_TOLERANT || PAGING
 class RDMAMemoryManager; // forward decleration
 static RDMAMemoryManager* manager = nullptr;

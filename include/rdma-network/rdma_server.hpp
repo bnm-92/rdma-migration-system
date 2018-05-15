@@ -72,6 +72,4 @@ private:
     sem_t conn_queue_sem;
 };
 
-#include "rdma-network/rdma_server.tpp"
-
 #endif // __RDMA_SERVER_HPP__

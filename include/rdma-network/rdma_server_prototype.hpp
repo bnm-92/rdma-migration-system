@@ -440,6 +440,6 @@ struct rdma_message {
     size_t data_size;
 };
 
-#include "rdma-network/rdma_server_prototype.tpp"
+std::string toRDMAErrorString(int event);
 
 #endif // __RDMA_SERVER_PROTOTYPE_HPP__
