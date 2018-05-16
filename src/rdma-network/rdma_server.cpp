@@ -9,13 +9,13 @@
 #include "rdma-network/rdma_server.hpp"
 
 
-inline
+
 RDMAServer::RDMAServer() : RDMAServerPrototype() {
     // Create the connection queue semaphore.
     ASSERT_ZERO(sem_init(&conn_queue_sem, 0, 0));
 }
 
-inline
+
 RDMAServer::~RDMAServer() {
     // Note: This is never called right now because RDMAServer
     // stopping has not been implemented.
@@ -25,7 +25,7 @@ RDMAServer::~RDMAServer() {
     sem_destroy(&conn_queue_sem);
 }
 
-inline
+
 void RDMAServer::start(int port) {
     // Make sure the server hasn't already been started,
     // and set the started flag.
@@ -58,14 +58,14 @@ void RDMAServer::start(int port) {
     int backlog = 10; // Arbitrary.
     ASSERT_ZERO(rdma_listen(listener_socket, backlog));
     LogInfo("RDMAServer created. Listening with socket %p on port %d", listener_socket, ntohs(rdma_get_src_port(listener_socket)));
-    
+
     // Spin up the event loop.
     event_thread = std::thread(&RDMAServer::event_loop, this);
 
     return;
 }
 
-inline
+
 void RDMAServer::stop() {
     // Implementation: Set the stop flag, and try to disconnect every socket.
     // The event loop will exit when the last socket has been disconnected
@@ -80,7 +80,7 @@ void RDMAServer::stop() {
     return;
 }
 
-inline
+
 uintptr_t RDMAServer::accept() {
     // Signal the semaphore that someone's ready to accept a connection.
     sem_post(&conn_queue_sem);
@@ -90,15 +90,15 @@ uintptr_t RDMAServer::accept() {
     return (uintptr_t) rdma_socket->context;
 }
 
-inline
+
 int RDMAServer::get_port() {
     return ntohs(rdma_get_src_port(listener_socket));
 }
 
-inline
+
 int RDMAServer::on_connect_request(struct rdma_cm_id* rdma_socket) {
     LogInfo("Received connection request");
-    
+
     // If we haven't built the device resources for this RDMA server,
     // build them now.
     // See comments in header for more details.
@@ -135,7 +135,7 @@ int RDMAServer::on_connect_request(struct rdma_cm_id* rdma_socket) {
     return 0;
 }
 
-inline
+
 int RDMAServer::on_connection(struct rdma_cm_id* rdma_socket) {
     LogInfo("Connection established for rdma socket %p", rdma_socket);
 

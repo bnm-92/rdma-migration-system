@@ -9,14 +9,14 @@
 #include "rdma-network/rdma_server_prototype.hpp"
 #include <sys/mman.h>
 
-inline
+
 RDMAServerPrototype::RDMAServerPrototype()
 : resources(NULL), started(false), run(true) {}
 
-inline
+
 RDMAServerPrototype::~RDMAServerPrototype() {}
 
-inline
+
 void RDMAServerPrototype::register_memory(
     uintptr_t conn_id, void* addr, size_t len, bool remote_access
 ) {
@@ -41,7 +41,7 @@ void RDMAServerPrototype::register_memory(
     return;
 }
 
-inline
+
 void RDMAServerPrototype::register_memory(
     uintptr_t conn_id, void* addr, size_t len) {
     std::lock_guard<std::mutex> guard(user_mutex);
@@ -57,7 +57,7 @@ void RDMAServerPrototype::register_memory(
     return;
 }
 
-inline
+
 void RDMAServerPrototype::deregister_memory(uintptr_t conn_id, void* addr) {
     std::lock_guard<std::mutex> guard(user_mutex);
     struct rdma_connection* conn = (struct rdma_connection*)conn_id;
@@ -66,11 +66,11 @@ void RDMAServerPrototype::deregister_memory(uintptr_t conn_id, void* addr) {
     conn->registrations.erase(addr);
     //ibv_dereg_mr returns an int for success or fail, TODO, add check
     ibv_dereg_mr(registration);
-    
+
     return;
 }
 
-inline
+
 void RDMAServerPrototype::send(
     uintptr_t conn_id, const void* msg_buffer, size_t len
 ) {
@@ -107,7 +107,7 @@ void RDMAServerPrototype::send(
     LogInfo("RDMAServerPrototype::send completed");
 }
 
-inline
+
 void RDMAServerPrototype::send_prepare(
     uintptr_t conn_id, void* start_addr, size_t len) {
     std::lock_guard<std::mutex> guard(user_mutex);
@@ -130,8 +130,8 @@ void RDMAServerPrototype::send_prepare(
 }
 
 #if FAULT_TOLERANT
-inline
-int RDMAServerPrototype::send_prepare(uintptr_t conn_id, 
+
+int RDMAServerPrototype::send_prepare(uintptr_t conn_id,
     void* start_addr, size_t len, char* client_id, size_t client_id_size) {
     std::lock_guard<std::mutex> guard(user_mutex);
     struct rdma_connection* conn = (struct rdma_connection*)conn_id;
@@ -152,7 +152,7 @@ int RDMAServerPrototype::send_prepare(uintptr_t conn_id,
 }
 
 
-inline
+
 void RDMAServerPrototype::getPartitionList(uintptr_t conn_id) {
     std::lock_guard<std::mutex> guard(user_mutex);
     struct rdma_connection* conn = (struct rdma_connection*)conn_id;
@@ -166,7 +166,7 @@ void RDMAServerPrototype::getPartitionList(uintptr_t conn_id) {
     LogInfo("RDMAServerPrototype::send get partition list message to pair");
 }
 
-inline
+
 void RDMAServerPrototype::sendPartitionList(uintptr_t conn_id, std::string str) {
     std::lock_guard<std::mutex> guard(user_mutex);
     struct rdma_connection* conn = (struct rdma_connection*)conn_id;
@@ -186,7 +186,7 @@ void RDMAServerPrototype::sendPartitionList(uintptr_t conn_id, std::string str) 
 
 #endif
 
-inline
+
 void RDMAServerPrototype::send_decline(
     uintptr_t conn_id, void* start_addr, size_t len) {
     std::lock_guard<std::mutex> guard(user_mutex);
@@ -206,7 +206,7 @@ void RDMAServerPrototype::send_decline(
     LogInfo("RDMAServerPrototype::send decline message to client");
 }
 
-inline
+
 int RDMAServerPrototype::send_accept(
     uintptr_t conn_id, void* start_addr, size_t len) {
     std::lock_guard<std::mutex> guard(user_mutex);
@@ -226,7 +226,7 @@ int RDMAServerPrototype::send_accept(
     return post_rdma_send(conn, &rdma_msg, NULL);
 }
 
-inline
+
 void RDMAServerPrototype::send_transfer(
     uintptr_t conn_id, void* start_addr, size_t len) {
     std::lock_guard<std::mutex> guard(user_mutex);
@@ -247,7 +247,7 @@ void RDMAServerPrototype::send_transfer(
     LogInfo("RDMAServerPrototype::send transfer message to client");
 }
 
-inline
+
 void RDMAServerPrototype::send_close(
     uintptr_t conn_id, void* addr, size_t len) {
     std::lock_guard<std::mutex> guard(user_mutex);
@@ -265,7 +265,7 @@ void RDMAServerPrototype::send_close(
     LogInfo("RDMAServerPrototype::send done message to client");
 }
 
-inline
+
 std::pair<void*, size_t> RDMAServerPrototype::receive(uintptr_t conn_id) {
     std::lock_guard<std::mutex> guard(user_mutex);
     struct rdma_connection* conn = (struct rdma_connection*)conn_id;
@@ -281,13 +281,13 @@ std::pair<void*, size_t> RDMAServerPrototype::receive(uintptr_t conn_id) {
     return res;
 }
 
-inline
+
 bool RDMAServerPrototype::checkForMessage(uintptr_t conn_id) {
     struct rdma_connection* conn = (struct rdma_connection*)conn_id;
     return !conn->recv_queue.empty();
 }
 
-inline
+
 void RDMAServerPrototype::rdma_read_async(
     uintptr_t conn_id, void* local_addr, void* remote_addr, size_t len, void (*callback)(void*), void* data
 ) {
@@ -337,13 +337,13 @@ void RDMAServerPrototype::rdma_read_async(
     LogInfo("posting read to rdma queue");
     // Do the read.
     post_rdma_read(conn, local_addr, lkey, remote_addr, rkey, len, callback, data);
-    
+
     // And wait for the read to finish.
     LogInfo("read posted, will complete async");
     return;
 }
 
-inline
+
 int RDMAServerPrototype::rdma_read(
     uintptr_t conn_id, void* local_addr, void* remote_addr, size_t len
 ) {
@@ -399,7 +399,7 @@ int RDMAServerPrototype::rdma_read(
     LogInfo("posting read to rdma queue");
     // Do the read.
     post_rdma_read(conn, local_addr, lkey, remote_addr, rkey, len, &sem);
-    
+
     // And wait for the read to finish.
     sem_wait(&sem);
     sem_destroy(&sem);
@@ -407,7 +407,7 @@ int RDMAServerPrototype::rdma_read(
     return 0;
 }
 
-inline
+
 void RDMAServerPrototype::rdma_write(
     uintptr_t conn_id, void* local_addr, void* remote_addr, size_t len
 ) {
@@ -423,7 +423,7 @@ void RDMAServerPrototype::rdma_write(
     uint32_t rkey = 0;
     remote_region mr_remote = conn->remote_registrations[remote_addr];
     rkey = mr_remote.rkey;
-    
+
     // Now we can actually execute the read.
     // Create the semaphore to block on.
     sem_t sem;
@@ -439,7 +439,7 @@ void RDMAServerPrototype::rdma_write(
     return;
 }
 
-inline
+
 void RDMAServerPrototype::done(uintptr_t conn_id) {
     std::lock_guard<std::mutex> guard(user_mutex);
     struct rdma_connection* conn = (struct rdma_connection*)conn_id;
@@ -470,12 +470,12 @@ void RDMAServerPrototype::done(uintptr_t conn_id) {
     return;
 }
 
-inline
+
 void RDMAServerPrototype::destroy() {
     event_thread.join();
 }
 
-inline
+
 void RDMAServerPrototype::event_loop() {
     // Pull from the event channel in a loop and process the events.
     struct rdma_cm_event* event;
@@ -502,7 +502,7 @@ void RDMAServerPrototype::event_loop() {
     return;
 }
 
-inline
+
 std::string toRDMAErrorString(int event) {
     if (event == RDMA_CM_EVENT_ADDR_RESOLVED) {
         return "RDMA_CM_EVENT_ADDR_RESOLVED";
@@ -541,7 +541,7 @@ std::string toRDMAErrorString(int event) {
     }
 }
 
-inline
+
 int RDMAServerPrototype::on_event(struct rdma_cm_event* event) {
     // FYI:
     // The event flow for the server and client are different from each other.
@@ -585,24 +585,24 @@ int RDMAServerPrototype::on_event(struct rdma_cm_event* event) {
 //
 // (Not all of these need to be implemented by subclasses, so to avoid
 // pure virtual errors, we'll give them all an implementation right now.)
-inline
+
 int RDMAServerPrototype::on_addr_resolved(struct rdma_cm_id* rdma_socket) {
     throw std::exception();
 }
-inline
+
 int RDMAServerPrototype::on_route_resolved(struct rdma_cm_id* rdma_socket) {
     throw std::exception();
 }
-inline
+
 int RDMAServerPrototype::on_connect_request(struct rdma_cm_id* rdma_socket) {
     throw std::exception();
 }
-inline
+
 int RDMAServerPrototype::on_connection(struct rdma_cm_id* rdma_socket) {
     throw std::exception();
 }
 
-inline
+
 int RDMAServerPrototype::on_disconnect(struct rdma_cm_id* rdma_socket) {
     // The socket's connection.
     struct rdma_connection* conn = (struct rdma_connection*) rdma_socket->context;
@@ -638,7 +638,7 @@ int RDMAServerPrototype::on_disconnect(struct rdma_cm_id* rdma_socket) {
     return 0;
 }
 
-inline
+
 void* RDMAServerPrototype::poll_cq() {
     struct ibv_cq *cq;
     struct ibv_wc wc;
@@ -662,7 +662,7 @@ void* RDMAServerPrototype::poll_cq() {
     return NULL;
 }
 
-inline
+
 void RDMAServerPrototype::on_completion(struct ibv_wc* work_completion) {
     // TODO: handle this more verbosely. Just for debugging though --
     // we don't intend to allow errors in proper operation.
@@ -707,7 +707,7 @@ void RDMAServerPrototype::on_completion(struct ibv_wc* work_completion) {
     return;
 }
 
-inline
+
 void RDMAServerPrototype::on_recv_finish(struct ibv_wc* wc) {
     // unsafe for receiving lots of messages in a quick burst
     // Grab the work context.
@@ -762,7 +762,7 @@ void RDMAServerPrototype::on_recv_finish(struct ibv_wc* wc) {
             LogInfo("recieving done while having it sent before");
             rdma_disconnect(conn->rdma_socket);
         }
-    
+
     } else if(msg->message_type == msg->MessageType::MSG_PREPARE) {
         // Rearm the RDMA receive queue as soon as possible.
         post_rdma_receive(conn);
@@ -772,24 +772,24 @@ void RDMAServerPrototype::on_recv_finish(struct ibv_wc* wc) {
         struct rdma_message* msg_for_user = (struct rdma_message*)malloc(sizeof(struct rdma_message));
         memcpy(msg_for_user, msg, sizeof(struct rdma_message));
         conn->recv_queue.enqueue(
-            std::pair<void*, size_t>((void*)msg_for_user, sizeof(struct rdma_message))); 
+            std::pair<void*, size_t>((void*)msg_for_user, sizeof(struct rdma_message)));
 
         //register memory and accept
         // void* addr = msg->region_info.addr;
         // std::cout << "got prepare at memory at locaiton : " << addr << std::endl;
         // // conn->remote_registrations[addr] = msg->region_info;
-        
+
         // size_t size = msg->region_info.length;
         // addr = mmap(addr, size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS,-1,0);
-        
+
         // std::cout << "allocating memory at locaiton : " << addr << std::endl;
-        
+
         // if(addr == MAP_FAILED) {
         //     struct rdma_message rdma_msg;
         //     memset(&rdma_msg, 0, sizeof(rdma_msg));
         //     rdma_msg.message_type = rdma_message::MessageType::MSG_DECLINE;
         //     post_rdma_send(conn, &rdma_msg, NULL);
-        // } 
+        // }
         // //lets register the memory as well
         // this->register_memory((uintptr_t)conn->rdma_socket, addr, size, false);
 
@@ -806,24 +806,24 @@ void RDMAServerPrototype::on_recv_finish(struct ibv_wc* wc) {
         struct rdma_message* msg_for_user = (struct rdma_message*)malloc(sizeof(struct rdma_message));
         memcpy(msg_for_user, msg, sizeof(struct rdma_message));
         conn->recv_queue.enqueue(
-            std::pair<void*, size_t>((void*)msg_for_user, sizeof(struct rdma_message))); 
+            std::pair<void*, size_t>((void*)msg_for_user, sizeof(struct rdma_message)));
 
-        
-        // throw std::runtime_error("not implemented receiveing accept");  
+
+        // throw std::runtime_error("not implemented receiveing accept");
     } else if (msg->message_type == msg->MessageType::MSG_TRANSFER) {
         // Rearm the RDMA receive queue as soon as possible.
         post_rdma_receive(conn);
         struct rdma_message* msg_for_user = (struct rdma_message*)malloc(sizeof(struct rdma_message));
         memcpy(msg_for_user, msg, sizeof(struct rdma_message));
-        
+
         void* addr = msg_for_user->region_info.addr;
         conn->remote_registrations[addr] = msg_for_user->region_info;
-        
+
         conn->recv_queue.enqueue(
-            std::pair<void*, size_t>((void*)msg_for_user, sizeof(struct rdma_message))); 
+            std::pair<void*, size_t>((void*)msg_for_user, sizeof(struct rdma_message)));
 
         // // we have alread registered the memory so we will simply read the memory location
-        // this->rdma_read((uintptr_t)conn->rdma_socket, 
+        // this->rdma_read((uintptr_t)conn->rdma_socket,
         // msg->region_info.addr, msg->region_info.addr, msg->region_info.length);
 
         // // pass it to user to notify the transfer has completed
@@ -834,28 +834,28 @@ void RDMAServerPrototype::on_recv_finish(struct ibv_wc* wc) {
         post_rdma_receive(conn);
         struct rdma_message* msg_for_user = (struct rdma_message*)malloc(sizeof(struct rdma_message));
         memcpy(msg_for_user, msg, sizeof(struct rdma_message));
-        
+
         // conn->registrations.erase(addr);
-        
+
         conn->recv_queue.enqueue(
-            std::pair<void*, size_t>((void*)msg_for_user, sizeof(struct rdma_message))); 
+            std::pair<void*, size_t>((void*)msg_for_user, sizeof(struct rdma_message)));
 
         // // we have alread registered the memory so we will simply read the memory location
-        // this->rdma_read((uintptr_t)conn->rdma_socket, 
+        // this->rdma_read((uintptr_t)conn->rdma_socket,
         // msg->region_info.addr, msg->region_info.addr, msg->region_info.length);
 
         // // pass it to user to notify the transfer has completed
         // conn->recv_queue.enqueue(
         //     std::pair<void*, size_t>((void*)msg, sizeof(struct rdma_message)));
     } else if(msg->message_type == msg->MessageType::MSG_DECLINE) {
-        
+
         post_rdma_receive(conn);
         struct rdma_message* msg_for_user = (struct rdma_message*)malloc(sizeof(struct rdma_message));
         memcpy(msg_for_user, msg, sizeof(struct rdma_message));
         conn->recv_queue.enqueue(
             std::pair<void*, size_t>((void*)msg_for_user, sizeof(struct rdma_message)));
     } else if(msg->message_type == msg->MessageType::MSG_GET_PARTITIONS) {
-        
+
         post_rdma_receive(conn);
         struct rdma_message* msg_for_user = (struct rdma_message*)malloc(sizeof(struct rdma_message));
         memcpy(msg_for_user, msg, sizeof(struct rdma_message));
@@ -863,7 +863,7 @@ void RDMAServerPrototype::on_recv_finish(struct ibv_wc* wc) {
             std::pair<void*, size_t>((void*)msg_for_user, sizeof(struct rdma_message)));
 
     } else if(msg->message_type == msg->MessageType::MSG_SENT_PARTITIONS) {
-        
+
         post_rdma_receive(conn);
         struct rdma_message* msg_for_user = (struct rdma_message*)malloc(sizeof(struct rdma_message));
         memcpy(msg_for_user, msg, sizeof(struct rdma_message));
@@ -875,7 +875,7 @@ void RDMAServerPrototype::on_recv_finish(struct ibv_wc* wc) {
     }
 }
 
-inline
+
 void RDMAServerPrototype::on_send_finish(struct ibv_wc* wc) {
     // Grab the work context.
     struct work_context* work_ctx = (struct work_context*) wc->wr_id;
@@ -921,42 +921,42 @@ void RDMAServerPrototype::on_send_finish(struct ibv_wc* wc) {
     }
 }
 
-inline
+
 void RDMAServerPrototype::on_rdma_read_finish(struct ibv_wc* wc) {
     LogInfo("read completed");
 }
 
-inline
+
 void RDMAServerPrototype::on_rdma_write_finish(struct ibv_wc* wc) {
     throw std::logic_error(
         "Support for this opcode has not yet been implemented!");
 }
 
-inline
+
 void RDMAServerPrototype::on_comp_swap_finish(struct ibv_wc* wc) {
     throw std::logic_error(
         "Support for this opcode has not yet been implemented!");
 }
 
-inline
+
 void RDMAServerPrototype::on_fetch_add_finish(struct ibv_wc* wc) {
     throw std::logic_error(
         "Support for this opcode has not yet been implemented!");
 }
 
-inline
+
 void RDMAServerPrototype::on_bind_mw_finish(struct ibv_wc* wc) {
     throw std::logic_error(
         "Support for this opcode has not yet been implemented!");
 }
 
-inline
+
 void RDMAServerPrototype::on_imm_recv_finish(struct ibv_wc* wc) {
     throw std::logic_error(
         "Support for this opcode has not yet been implemented!");
 }
 
-inline
+
 void RDMAServerPrototype::build_resources_for_device(
     struct ibv_context* dev_ctx
 ) {
@@ -995,7 +995,7 @@ void RDMAServerPrototype::build_resources_for_device(
     return;
 }
 
-inline
+
 void RDMAServerPrototype::build_queue_pair(struct rdma_cm_id* rdma_socket) {
     // Create the parameter struct.
     struct ibv_qp_init_attr qp_attr;
@@ -1016,7 +1016,7 @@ void RDMAServerPrototype::build_queue_pair(struct rdma_cm_id* rdma_socket) {
     ASSERT_ZERO(rdma_create_qp(rdma_socket, resources->protection_domain, &qp_attr));
 }
 
-inline
+
 struct rdma_connection* RDMAServerPrototype::build_connection_object(
     struct rdma_cm_id* rdma_socket
 ) {
@@ -1043,7 +1043,7 @@ struct rdma_connection* RDMAServerPrototype::build_connection_object(
     return conn;
 }
 
-inline
+
 struct ibv_mr* RDMAServerPrototype::register_memory_with_conn(
     struct rdma_connection* conn, void* addr, int size, int access_flags
 ) {
@@ -1059,7 +1059,7 @@ struct ibv_mr* RDMAServerPrototype::register_memory_with_conn(
     return registration;
 }
 
-inline
+
 void RDMAServerPrototype::send_meminfo(
     struct rdma_connection* conn, struct ibv_mr* meminfo
 ) {
@@ -1084,7 +1084,7 @@ void RDMAServerPrototype::send_meminfo(
     sem_destroy(&done_sem);
 }
 
-inline
+
 void RDMAServerPrototype::post_rdma_receive(struct rdma_connection* conn) {
     // Create the work context.
     struct work_context* work_ctx = new work_context();
@@ -1113,7 +1113,7 @@ void RDMAServerPrototype::post_rdma_receive(struct rdma_connection* conn) {
     ASSERT_ZERO(ibv_post_recv(conn->rdma_socket->qp, &receive_request, &bad_wr));
 }
 
-inline
+
 int RDMAServerPrototype::post_rdma_send(
     struct rdma_connection* conn, struct rdma_message* msg, sem_t* sem
 ) {
@@ -1154,7 +1154,7 @@ int RDMAServerPrototype::post_rdma_send(
     return ibv_post_send(conn->rdma_socket->qp, &send_request, &bad_wr);
 }
 
-inline
+
 void RDMAServerPrototype::post_rdma_read(
     struct rdma_connection* conn,
     void* local_addr, uint32_t lkey,
@@ -1196,7 +1196,7 @@ void RDMAServerPrototype::post_rdma_read(
     LogAssert(rc == 0, "async posting failure bcz %s", strerror(rc));
 }
 
-inline
+
 void RDMAServerPrototype::post_rdma_read(
     struct rdma_connection* conn,
     void* local_addr, uint32_t lkey,
@@ -1237,7 +1237,7 @@ void RDMAServerPrototype::post_rdma_read(
         conn->rdma_socket->qp, &send_request, &bad_wr));
 }
 
-inline
+
 void RDMAServerPrototype::post_rdma_write(
     struct rdma_connection* conn,
     void* local_addr, uint32_t lkey,
@@ -1278,7 +1278,7 @@ void RDMAServerPrototype::post_rdma_write(
         conn->rdma_socket->qp, &send_request, &bad_wr));
 }
 
-inline
+
 void RDMAServerPrototype::build_conn_param(struct rdma_conn_param* param) {
     // See man 3 rdma_accept for more details about rdma_conn_param.
     memset(param, 0, sizeof(*param));

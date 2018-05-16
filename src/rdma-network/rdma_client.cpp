@@ -9,16 +9,16 @@
 #include "rdma-network/rdma_server_prototype.hpp"
 #include "rdma-network/rdma_client.hpp"
 
-inline
+
 RDMAClient::RDMAClient()
 : RDMAServerPrototype(), connection(NULL) {
     stop_after_last_conn = true;
 }
 
-inline
+
 RDMAClient::~RDMAClient() {}
 
-inline
+
 uintptr_t RDMAClient::connect(
     const char* addr, const char* port
 ) {
@@ -70,7 +70,7 @@ uintptr_t RDMAClient::connect(
     return conn_id;
 }
 
-inline
+
 int RDMAClient::on_addr_resolved(struct rdma_cm_id* rdma_socket) {
     LogInfo("RDMAClient: Address resolved.");
 
@@ -100,14 +100,14 @@ int RDMAClient::on_addr_resolved(struct rdma_cm_id* rdma_socket) {
 
         // continue on to the next step in the connection:
         // Resolve the route.
-        
+
     }
     ASSERT_ZERO(rdma_resolve_route(rdma_socket, TIMEOUT_MS));
 
     return 0;
 }
 
-inline
+
 int RDMAClient::on_route_resolved(struct rdma_cm_id* rdma_socket) {
     LogInfo("Route Resolved");
     // Establish the connection.
@@ -118,7 +118,7 @@ int RDMAClient::on_route_resolved(struct rdma_cm_id* rdma_socket) {
     return 0;
 }
 
-inline
+
 int RDMAClient::on_connection(struct rdma_cm_id* rdma_socket) {
     LogInfo("Connection established for rdma socket %p ", rdma_socket);
     error = false;
@@ -128,7 +128,7 @@ int RDMAClient::on_connection(struct rdma_cm_id* rdma_socket) {
     return 0;
 }
 
-inline
+
 void RDMAClient::on_completion(struct ibv_wc* work_completion) {
     if (work_completion->status != IBV_WC_SUCCESS) {
         std::cout << "Case IBV_WC_SUCCESS error, it should be handled" << std::endl;
@@ -142,11 +142,11 @@ void RDMAClient::on_completion(struct ibv_wc* work_completion) {
     }
 }
 
-inline
+
 void RDMAClient::event_loop() {
     struct rdma_cm_event* event;
     while (rdma_get_cm_event(event_channel, &event) == 0) {
-    
+
         struct rdma_cm_event event_copy;
         memcpy(&event_copy, event, sizeof(*event));
 
@@ -165,7 +165,7 @@ void RDMAClient::event_loop() {
     return;
 }
 
-inline
+
 int RDMAClient::on_event(struct rdma_cm_event* event) {
     int res = 1;
 
@@ -182,7 +182,7 @@ int RDMAClient::on_event(struct rdma_cm_event* event) {
         if (stop_after_last_conn and connections.empty()) {
             return -1;
         }
-    } 
+    }
     // else if (event->event == RDMA_CM_EVENT_REJECTED) {
     //     // other server was not present
     //     if(debug_level < 2) {
@@ -195,8 +195,8 @@ int RDMAClient::on_event(struct rdma_cm_event* event) {
     //         std::cout << "sem error " << errno << std::endl;
     //     }
 
-    //     res = 1;        
-    // } 
+    //     res = 1;
+    // }
     else {
         std::cout << toRDMAErrorString(event->event) << "\n";
         // throw std::runtime_error("on_event received unknown event "
